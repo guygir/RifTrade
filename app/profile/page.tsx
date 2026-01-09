@@ -330,6 +330,10 @@ export default function ProfilePage() {
                           .delete()
                           .eq('profile_id', profile.id)
                           .in('card_id', toRemove)
+                          .then(({ error }) => {
+                            if (error) throw error;
+                            return null;
+                          })
                       );
                     }
                     
@@ -339,6 +343,10 @@ export default function ProfilePage() {
                         supabase
                           .from('profile_have_cards')
                           .upsert(toAdd, { onConflict: 'profile_id,card_id' })
+                          .then(({ error }) => {
+                            if (error) throw error;
+                            return null;
+                          })
                       );
                     }
                     
@@ -421,6 +429,10 @@ export default function ProfilePage() {
                           .delete()
                           .eq('profile_id', profile.id)
                           .in('card_id', toRemove)
+                          .then(({ error }) => {
+                            if (error) throw error;
+                            return null;
+                          })
                       );
                     }
                     
@@ -430,6 +442,10 @@ export default function ProfilePage() {
                         supabase
                           .from('profile_want_cards')
                           .upsert(toAdd, { onConflict: 'profile_id,card_id' })
+                          .then(({ error }) => {
+                            if (error) throw error;
+                            return null;
+                          })
                       );
                     }
                     
