@@ -280,6 +280,11 @@ export function transformCard(card: RiftcodexCard, variant: 'normal' | 'foil' | 
   // This is done BEFORE any variant modifications to ensure foil variants have the same sort_key
   const sortKey = extractSortKey(riftboundId);
   
+  // Check if this is an overnumbered card (collector_number >= 299 for OGN set)
+  // Use the extracted collectorNumber (which comes from public_code or riftbound_id)
+  const collectorNum = parseInt(collectorNumber.replace(/[^0-9]/g, '')) || 0;
+  const isOvernumbered = setCode === 'OGN' && collectorNum >= 299 && collectorNum <= 310;
+  
   // Handle name variations based on variant and rarity
   let cardName = card.name || '';
   let modifiedCollectorNumber = collectorNumber;
@@ -290,9 +295,16 @@ export function transformCard(card: RiftcodexCard, variant: 'normal' | 'foil' | 
     // But keep same sort_key for proper ordering
     modifiedCollectorNumber = `${collectorNumber}-foil`;
   } else if (rarity === 'Showcase') {
-    // For Showcase rarity, rename to (Alternate art) if not already
-    if (!cardName.includes('(Alternate art)') && !cardName.includes('(Alternate Art)') && !cardName.includes('(alternate art)')) {
-      cardName = `${cardName} (Alternate art)`;
+    if (isOvernumbered) {
+      // For overnumbered Showcase cards, use (Overnumbered) instead of (Alternate art)
+      if (!cardName.includes('(Overnumbered)')) {
+        cardName = `${cardName} (Overnumbered)`;
+      }
+    } else {
+      // For regular Showcase cards, use (Alternate art)
+      if (!cardName.includes('(Alternate art)') && !cardName.includes('(Alternate Art)') && !cardName.includes('(alternate art)')) {
+        cardName = `${cardName} (Alternate art)`;
+      }
     }
   }
   // If variant is 'alternate' explicitly, also rename

@@ -8,12 +8,17 @@ import { getCardDisplayName } from '@/lib/card-display';
 
 export default function CardsPage() {
   const [cards, setCards] = useState<Card[]>([]);
+  const [userHaveCards, setUserHaveCards] = useState<Set<string>>(new Set());
+  const [userWantCards, setUserWantCards] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedSet, setSelectedSet] = useState<string>('all');
+  const [selectedSets, setSelectedSets] = useState<Set<string>>(new Set(['OGN'])); // Default: only OGN
+  const [showOwned, setShowOwned] = useState(true);
+  const [showUnowned, setShowUnowned] = useState(true);
 
   useEffect(() => {
     loadCards();
+    loadUserCards();
   }, []);
 
   const loadCards = async () => {
@@ -35,12 +40,63 @@ export default function CardsPage() {
     }
   };
 
+  const loadUserCards = async () => {
+    try {
+      const supabase = createSupabaseClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!profileData) return;
+
+      const [haveResult, wantResult] = await Promise.all([
+        supabase
+          .from('profile_have_cards')
+          .select('card_id')
+          .eq('profile_id', profileData.id),
+        supabase
+          .from('profile_want_cards')
+          .select('card_id')
+          .eq('profile_id', profileData.id)
+      ]);
+
+      if (haveResult.data) {
+        setUserHaveCards(new Set(haveResult.data.map(item => item.card_id).filter(Boolean)));
+      }
+      if (wantResult.data) {
+        setUserWantCards(new Set(wantResult.data.map(item => item.card_id).filter(Boolean)));
+      }
+    } catch (err) {
+      console.error('Error loading user cards:', err);
+    }
+  };
+
   const sets = Array.from(new Set(cards.map(c => c.set_code))).sort();
   
   const filteredCards = cards.filter(card => {
-    const matchesSearch = card.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesSet = selectedSet === 'all' || card.set_code === selectedSet;
-    return matchesSearch && matchesSet;
+    // Search by name, collector number, or public_code
+    const searchLower = searchTerm.toLowerCase();
+    const matchesSearch = 
+      card.name.toLowerCase().includes(searchLower) ||
+      card.collector_number.toLowerCase().includes(searchLower) ||
+      (card.public_code && card.public_code.toLowerCase().includes(searchLower)) ||
+      getCardDisplayName(card).toLowerCase().includes(searchLower);
+    
+    // Filter by selected sets
+    const matchesSet = selectedSets.size === 0 || selectedSets.has(card.set_code);
+    
+    // Filter by owned/unowned
+    const isOwned = userHaveCards.has(card.id) || userWantCards.has(card.id);
+    const matchesOwnership = 
+      (showOwned && isOwned) || 
+      (showUnowned && !isOwned);
+    
+    return matchesSearch && matchesSet && matchesOwnership;
   });
 
   if (loading) {
@@ -59,25 +115,65 @@ export default function CardsPage() {
         <div className="mb-6">
           <h1 className="text-3xl font-bold mb-4">Card Browser</h1>
           
-          <div className="flex flex-col md:flex-row gap-4 mb-4">
+          <div className="flex flex-col gap-4 mb-4">
             <input
               type="text"
-              placeholder="Search cards..."
+              placeholder="Search cards by name or number (e.g., '001' or 'Blazing Scorcher')..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 px-4 py-2 border rounded-md"
+              className="w-full px-4 py-2 border rounded-md"
             />
             
-            <select
-              value={selectedSet}
-              onChange={(e) => setSelectedSet(e.target.value)}
-              className="px-4 py-2 border rounded-md"
-            >
-              <option value="all">All Sets</option>
-              {sets.map(set => (
-                <option key={set} value={set}>{set}</option>
-              ))}
-            </select>
+            <div className="flex flex-wrap gap-4">
+              <div className="flex-1">
+                <label className="block text-sm font-medium mb-2">Sets:</label>
+                <div className="flex flex-wrap gap-2">
+                  {sets.map(set => (
+                    <label key={set} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedSets.has(set)}
+                        onChange={(e) => {
+                          const newSets = new Set(selectedSets);
+                          if (e.target.checked) {
+                            newSets.add(set);
+                          } else {
+                            newSets.delete(set);
+                          }
+                          setSelectedSets(newSets);
+                        }}
+                        className="cursor-pointer"
+                      />
+                      <span className="text-sm">{set}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-2">Ownership:</label>
+                <div className="flex flex-col gap-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={showOwned}
+                      onChange={(e) => setShowOwned(e.target.checked)}
+                      className="cursor-pointer"
+                    />
+                    <span className="text-sm">Owned</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={showUnowned}
+                      onChange={(e) => setShowUnowned(e.target.checked)}
+                      className="cursor-pointer"
+                    />
+                    <span className="text-sm">Unowned</span>
+                  </label>
+                </div>
+              </div>
+            </div>
           </div>
 
           <p className="text-sm text-gray-600">

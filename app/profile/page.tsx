@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createSupabaseClient } from '@/lib/supabase/client';
@@ -287,22 +287,68 @@ export default function ProfilePage() {
                 selectedCards={haveCards}
                 onSelectionChange={async (cardSelections: Array<{ cardId: string; quantity: number }>) => {
                   const supabase = createSupabaseClient();
-                  // Remove all existing
-                  await supabase
-                    .from('profile_have_cards')
-                    .delete()
-                    .eq('profile_id', profile.id);
-                  // Add new ones with quantities
-                  if (cardSelections.length > 0) {
-                    await supabase
+                  try {
+                    // Get current selections from database
+                    const { data: currentData } = await supabase
                       .from('profile_have_cards')
-                      .insert(cardSelections.map(({ cardId, quantity }) => ({
-                        profile_id: profile.id,
-                        card_id: cardId,
-                        quantity: quantity || 1,
-                      })));
+                      .select('card_id, quantity')
+                      .eq('profile_id', profile.id);
+                    
+                    const currentMap = new Map<string, number>();
+                    (currentData || []).forEach((item: any) => {
+                      currentMap.set(item.card_id, item.quantity || 1);
+                    });
+                    
+                    const newMap = new Map<string, number>();
+                    cardSelections.forEach(({ cardId, quantity }) => {
+                      newMap.set(cardId, quantity);
+                    });
+                    
+                    // Find cards to add and remove
+                    const toAdd: Array<{ profile_id: string; card_id: string; quantity: number }> = [];
+                    const toRemove: string[] = [];
+                    
+                    newMap.forEach((quantity, cardId) => {
+                      if (!currentMap.has(cardId) || currentMap.get(cardId) !== quantity) {
+                        toAdd.push({ profile_id: profile.id, card_id: cardId, quantity });
+                      }
+                    });
+                    
+                    currentMap.forEach((_, cardId) => {
+                      if (!newMap.has(cardId)) {
+                        toRemove.push(cardId);
+                      }
+                    });
+                    
+                    // Batch operations
+                    const promises: Promise<any>[] = [];
+                    
+                    if (toRemove.length > 0) {
+                      promises.push(
+                        supabase
+                          .from('profile_have_cards')
+                          .delete()
+                          .eq('profile_id', profile.id)
+                          .in('card_id', toRemove)
+                      );
+                    }
+                    
+                    if (toAdd.length > 0) {
+                      // Use upsert to handle updates efficiently
+                      promises.push(
+                        supabase
+                          .from('profile_have_cards')
+                          .upsert(toAdd, { onConflict: 'profile_id,card_id' })
+                      );
+                    }
+                    
+                    await Promise.all(promises);
+                    await loadProfile(profile.user_id);
+                  } catch (err) {
+                    console.error('Error updating cards:', err);
+                    // Reload on error to sync state
+                    await loadProfile(profile.user_id);
                   }
-                  await loadProfile(profile.user_id);
                 }}
               />
             </div>
@@ -332,22 +378,68 @@ export default function ProfilePage() {
                 selectedCards={wantCards}
                 onSelectionChange={async (cardSelections: Array<{ cardId: string; quantity: number }>) => {
                   const supabase = createSupabaseClient();
-                  // Remove all existing
-                  await supabase
-                    .from('profile_want_cards')
-                    .delete()
-                    .eq('profile_id', profile.id);
-                  // Add new ones with quantities
-                  if (cardSelections.length > 0) {
-                    await supabase
+                  try {
+                    // Get current selections from database
+                    const { data: currentData } = await supabase
                       .from('profile_want_cards')
-                      .insert(cardSelections.map(({ cardId, quantity }) => ({
-                        profile_id: profile.id,
-                        card_id: cardId,
-                        quantity: quantity || 1,
-                      })));
+                      .select('card_id, quantity')
+                      .eq('profile_id', profile.id);
+                    
+                    const currentMap = new Map<string, number>();
+                    (currentData || []).forEach((item: any) => {
+                      currentMap.set(item.card_id, item.quantity || 1);
+                    });
+                    
+                    const newMap = new Map<string, number>();
+                    cardSelections.forEach(({ cardId, quantity }) => {
+                      newMap.set(cardId, quantity);
+                    });
+                    
+                    // Find cards to add and remove
+                    const toAdd: Array<{ profile_id: string; card_id: string; quantity: number }> = [];
+                    const toRemove: string[] = [];
+                    
+                    newMap.forEach((quantity, cardId) => {
+                      if (!currentMap.has(cardId) || currentMap.get(cardId) !== quantity) {
+                        toAdd.push({ profile_id: profile.id, card_id: cardId, quantity });
+                      }
+                    });
+                    
+                    currentMap.forEach((_, cardId) => {
+                      if (!newMap.has(cardId)) {
+                        toRemove.push(cardId);
+                      }
+                    });
+                    
+                    // Batch operations
+                    const promises: Promise<any>[] = [];
+                    
+                    if (toRemove.length > 0) {
+                      promises.push(
+                        supabase
+                          .from('profile_want_cards')
+                          .delete()
+                          .eq('profile_id', profile.id)
+                          .in('card_id', toRemove)
+                      );
+                    }
+                    
+                    if (toAdd.length > 0) {
+                      // Use upsert to handle updates efficiently
+                      promises.push(
+                        supabase
+                          .from('profile_want_cards')
+                          .upsert(toAdd, { onConflict: 'profile_id,card_id' })
+                      );
+                    }
+                    
+                    await Promise.all(promises);
+                    await loadProfile(profile.user_id);
+                  } catch (err) {
+                    console.error('Error updating cards:', err);
+                    // Reload on error to sync state
+                    await loadProfile(profile.user_id);
                   }
-                  await loadProfile(profile.user_id);
                 }}
               />
             </div>
@@ -369,12 +461,20 @@ function CardSelectorWithQuantity({
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [showOnlySelected, setShowOnlySelected] = useState(false);
+  const [localSelections, setLocalSelections] = useState<Map<string, number>>(new Map());
+  const [isSaving, setIsSaving] = useState(false);
   
-  // Create a map of selected cards with their quantities
-  const selectedMap = new Map<string, number>();
-  selectedCards.forEach(card => {
-    selectedMap.set(card.id, card.quantity || 1);
-  });
+  // Initialize local selections from props
+  useEffect(() => {
+    const map = new Map<string, number>();
+    selectedCards.forEach(card => {
+      map.set(card.id, card.quantity || 1);
+    });
+    setLocalSelections(map);
+  }, [selectedCards]);
+
+  // Create a map of selected cards with their quantities (use local state for immediate UI updates)
+  const selectedMap = localSelections;
 
   let filteredCards = allCards.filter(card =>
     card.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -386,22 +486,35 @@ function CardSelectorWithQuantity({
     filteredCards = filteredCards.filter(card => selectedMap.has(card.id));
   }
 
+  // Debounced save function
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
   const updateCardSelection = (cardId: string, quantity: number) => {
-    const newSelections: Array<{ cardId: string; quantity: number }> = [];
-    
-    // Add all currently selected cards
-    selectedMap.forEach((qty, id) => {
-      if (id !== cardId) {
-        newSelections.push({ cardId: id, quantity: qty });
-      }
-    });
-    
-    // Add/update the current card if quantity > 0
+    // Optimistic UI update - update local state immediately
+    const newSelections = new Map(selectedMap);
     if (quantity > 0) {
-      newSelections.push({ cardId, quantity });
+      newSelections.set(cardId, quantity);
+    } else {
+      newSelections.delete(cardId);
+    }
+    setLocalSelections(newSelections);
+    
+    // Clear existing timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
     }
     
-    onSelectionChange(newSelections);
+    // Debounce the database save (wait 500ms after last change)
+    setIsSaving(true);
+    saveTimeoutRef.current = setTimeout(async () => {
+      const selectionsArray: Array<{ cardId: string; quantity: number }> = [];
+      newSelections.forEach((qty, id) => {
+        selectionsArray.push({ cardId: id, quantity: qty });
+      });
+      
+      await onSelectionChange(selectionsArray);
+      setIsSaving(false);
+    }, 500);
   };
 
   return (
@@ -469,11 +582,14 @@ function CardSelectorWithQuantity({
         })}
       </div>
       
-      {selectedMap.size > 0 && (
-        <p className="text-xs text-gray-500 mt-2">
+      <div className="flex justify-between items-center mt-2">
+        <p className="text-xs text-gray-500">
           {selectedMap.size} card(s) selected
         </p>
-      )}
+        {isSaving && (
+          <p className="text-xs text-blue-500">Saving...</p>
+        )}
+      </div>
     </div>
   );
 }

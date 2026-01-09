@@ -32,7 +32,11 @@ export default function LoginPage() {
         if (error) throw error;
 
         if (data.user) {
-          setMessage('Account created! Please check your email to verify your account.');
+          setMessage('Account created! Redirecting to your profile...');
+          setTimeout(() => {
+            router.push('/profile');
+            router.refresh();
+          }, 1000);
         }
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -65,17 +69,20 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium mb-1">
-                Email
+                Email (any email format accepted)
               </label>
               <input
                 id="email"
-                type="email"
+                type="text"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 className="w-full px-3 py-2 border rounded-md"
-                placeholder="your@email.com"
+                placeholder="username@example.com (or any format)"
               />
+              <p className="text-xs text-gray-500 mt-1">
+                Email verification is disabled. You can use any email format.
+              </p>
             </div>
 
             <div>
