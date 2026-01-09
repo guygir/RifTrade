@@ -287,76 +287,33 @@ export default function ProfilePage() {
                 selectedCards={haveCards}
                 onSelectionChange={async (cardSelections: Array<{ cardId: string; quantity: number }>) => {
                   const supabase = createSupabaseClient();
-                  try {
-                    // Get current selections from database
-                    const { data: currentData } = await supabase
-                      .from('profile_have_cards')
-                      .select('card_id, quantity')
-                      .eq('profile_id', profile.id);
-                    
-                    const currentMap = new Map<string, number>();
-                    (currentData || []).forEach((item: any) => {
-                      currentMap.set(item.card_id, item.quantity || 1);
-                    });
-                    
-                    const newMap = new Map<string, number>();
-                    cardSelections.forEach(({ cardId, quantity }) => {
-                      newMap.set(cardId, quantity);
-                    });
-                    
-                    // Find cards to add and remove
-                    const toAdd: Array<{ profile_id: string; card_id: string; quantity: number }> = [];
-                    const toRemove: string[] = [];
-                    
-                    newMap.forEach((quantity, cardId) => {
-                      if (!currentMap.has(cardId) || currentMap.get(cardId) !== quantity) {
-                        toAdd.push({ profile_id: profile.id, card_id: cardId, quantity });
-                      }
-                    });
-                    
-                    currentMap.forEach((_, cardId) => {
-                      if (!newMap.has(cardId)) {
-                        toRemove.push(cardId);
-                      }
-                    });
-                    
-                    // Batch operations
-                    const promises: Promise<any>[] = [];
-                    
-                    if (toRemove.length > 0) {
-                      promises.push(
-                        supabase
-                          .from('profile_have_cards')
-                          .delete()
-                          .eq('profile_id', profile.id)
-                          .in('card_id', toRemove)
-                          .then(({ error }) => {
-                            if (error) throw error;
-                            return null;
-                          })
-                      );
-                    }
-                    
-                    if (toAdd.length > 0) {
-                      // Use upsert to handle updates efficiently
-                      promises.push(
-                        supabase
-                          .from('profile_have_cards')
-                          .upsert(toAdd, { onConflict: 'profile_id,card_id' })
-                          .then(({ error }) => {
-                            if (error) throw error;
-                            return null;
-                          })
-                      );
-                    }
-                    
-                    await Promise.all(promises);
+                  // Remove all existing
+                  const { error: deleteError } = await supabase
+                    .from('profile_have_cards')
+                    .delete()
+                    .eq('profile_id', profile.id);
+                  
+                  if (deleteError) {
+                    console.error('Error deleting cards:', deleteError);
                     await loadProfile(profile.user_id);
-                  } catch (err) {
-                    console.error('Error updating cards:', err);
-                    // Reload on error to sync state
-                    await loadProfile(profile.user_id);
+                    return;
                   }
+                  
+                  // Add new ones with quantities
+                  if (cardSelections.length > 0) {
+                    const { error: insertError } = await supabase
+                      .from('profile_have_cards')
+                      .insert(cardSelections.map(({ cardId, quantity }) => ({
+                        profile_id: profile.id,
+                        card_id: cardId,
+                        quantity: quantity || 1,
+                      })));
+                    
+                    if (insertError) {
+                      console.error('Error inserting cards:', insertError);
+                    }
+                  }
+                  await loadProfile(profile.user_id);
                 }}
               />
             </div>
@@ -386,76 +343,33 @@ export default function ProfilePage() {
                 selectedCards={wantCards}
                 onSelectionChange={async (cardSelections: Array<{ cardId: string; quantity: number }>) => {
                   const supabase = createSupabaseClient();
-                  try {
-                    // Get current selections from database
-                    const { data: currentData } = await supabase
-                      .from('profile_want_cards')
-                      .select('card_id, quantity')
-                      .eq('profile_id', profile.id);
-                    
-                    const currentMap = new Map<string, number>();
-                    (currentData || []).forEach((item: any) => {
-                      currentMap.set(item.card_id, item.quantity || 1);
-                    });
-                    
-                    const newMap = new Map<string, number>();
-                    cardSelections.forEach(({ cardId, quantity }) => {
-                      newMap.set(cardId, quantity);
-                    });
-                    
-                    // Find cards to add and remove
-                    const toAdd: Array<{ profile_id: string; card_id: string; quantity: number }> = [];
-                    const toRemove: string[] = [];
-                    
-                    newMap.forEach((quantity, cardId) => {
-                      if (!currentMap.has(cardId) || currentMap.get(cardId) !== quantity) {
-                        toAdd.push({ profile_id: profile.id, card_id: cardId, quantity });
-                      }
-                    });
-                    
-                    currentMap.forEach((_, cardId) => {
-                      if (!newMap.has(cardId)) {
-                        toRemove.push(cardId);
-                      }
-                    });
-                    
-                    // Batch operations
-                    const promises: Promise<any>[] = [];
-                    
-                    if (toRemove.length > 0) {
-                      promises.push(
-                        supabase
-                          .from('profile_want_cards')
-                          .delete()
-                          .eq('profile_id', profile.id)
-                          .in('card_id', toRemove)
-                          .then(({ error }) => {
-                            if (error) throw error;
-                            return null;
-                          })
-                      );
-                    }
-                    
-                    if (toAdd.length > 0) {
-                      // Use upsert to handle updates efficiently
-                      promises.push(
-                        supabase
-                          .from('profile_want_cards')
-                          .upsert(toAdd, { onConflict: 'profile_id,card_id' })
-                          .then(({ error }) => {
-                            if (error) throw error;
-                            return null;
-                          })
-                      );
-                    }
-                    
-                    await Promise.all(promises);
+                  // Remove all existing
+                  const { error: deleteError } = await supabase
+                    .from('profile_want_cards')
+                    .delete()
+                    .eq('profile_id', profile.id);
+                  
+                  if (deleteError) {
+                    console.error('Error deleting cards:', deleteError);
                     await loadProfile(profile.user_id);
-                  } catch (err) {
-                    console.error('Error updating cards:', err);
-                    // Reload on error to sync state
-                    await loadProfile(profile.user_id);
+                    return;
                   }
+                  
+                  // Add new ones with quantities
+                  if (cardSelections.length > 0) {
+                    const { error: insertError } = await supabase
+                      .from('profile_want_cards')
+                      .insert(cardSelections.map(({ cardId, quantity }) => ({
+                        profile_id: profile.id,
+                        card_id: cardId,
+                        quantity: quantity || 1,
+                      })));
+                    
+                    if (insertError) {
+                      console.error('Error inserting cards:', insertError);
+                    }
+                  }
+                  await loadProfile(profile.user_id);
                 }}
               />
             </div>
