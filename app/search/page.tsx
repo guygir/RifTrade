@@ -42,7 +42,7 @@ export default function SearchPage() {
       .from('cards')
       .select('*')
       .order('set_code', { ascending: true })
-      .order('sort_key', { ascending: true, nullsLast: true })
+      .order('sort_key', { ascending: true, nullsFirst: false })
       .order('collector_number');
     setAllCards(cardsData || []);
     

@@ -23,7 +23,7 @@ export default function CardsPage() {
         .from('cards')
         .select('*')
         .order('set_code', { ascending: true })
-        .order('sort_key', { ascending: true, nullsLast: true })
+        .order('sort_key', { ascending: true, nullsFirst: false })
         .order('collector_number');
 
       if (error) throw error;
