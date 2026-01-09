@@ -41,13 +41,18 @@ async function seedCards() {
       const isRune = cardType === 'Rune' || card.name?.includes('Rune');
       const publicCode = (card as any).public_code || null;
       const collectorNumber = (card as any).collector_number || card.number || '';
+      const setCode = (card as any).set?.set_id || card.set_code || card.set || '';
       
-      // Skip cards with * in collector_number (overnumbered variants we don't want)
-      if (publicCode && publicCode.includes('*')) {
-        return; // Skip this card
-      }
-      if (String(collectorNumber).includes('*')) {
-        return; // Skip this card
+      // Only skip overnumbered * variants (299*-310* for OGN set)
+      // Don't skip other cards that might have * in their data
+      if (setCode === 'OGN' && publicCode) {
+        const match = publicCode.match(/OGN-(\d+)\*/);
+        if (match) {
+          const num = parseInt(match[1]);
+          if (num >= 299 && num <= 310) {
+            return; // Skip overnumbered * variants (299*-310*)
+          }
+        }
       }
       
       // For Showcase cards, just add one card with (Alternate art) or (Overnumbered) name
