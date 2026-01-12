@@ -15,6 +15,7 @@ export type Card = {
 export type Profile = {
   id: string;
   user_id: string;
+  username: string | null;
   display_name: string;
   contact_info: string;
   trading_locations: string | null;
@@ -41,5 +42,15 @@ export type ProfileWantCard = {
 export type ProfileWithCards = Profile & {
   have_cards: (Card & { profile_have_card_id: string })[];
   want_cards: (Card & { profile_want_card_id: string })[];
+};
+
+export type UserMatch = {
+  id: string;
+  user_profile_id: string;
+  matched_profile_id: string;
+  match_count: number;
+  is_new: boolean;
+  created_at: string;
+  updated_at: string;
 };
 

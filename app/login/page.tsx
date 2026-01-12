@@ -9,21 +9,101 @@ export default function LoginPage() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [username, setUsername] = useState('');
+  const [usernameError, setUsernameError] = useState<string | null>(null);
+  const [checkingUsername, setCheckingUsername] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const router = useRouter();
+
+  // Validate username format: alphanumeric, underscore, hyphen, 3-30 chars
+  const validateUsername = (value: string): string | null => {
+    if (!value) return 'Username is required';
+    if (value.length < 3) return 'Username must be at least 3 characters';
+    if (value.length > 30) return 'Username must be at most 30 characters';
+    if (!/^[a-zA-Z0-9_-]+$/.test(value)) {
+      return 'Username can only contain letters, numbers, underscores, and hyphens';
+    }
+    return null;
+  };
+
+  // Check username uniqueness
+  const checkUsernameAvailability = async (value: string): Promise<boolean> => {
+    const supabase = createSupabaseClient();
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id')
+      .ilike('username', value.toLowerCase())
+      .limit(1);
+    
+    if (error) {
+      console.error('Error checking username:', error);
+      return false;
+    }
+    
+    return !data || data.length === 0;
+  };
+
+  const handleUsernameChange = async (value: string) => {
+    setUsername(value);
+    setUsernameError(null);
+    
+    if (!value) {
+      setUsernameError(null);
+      return;
+    }
+
+    const validationError = validateUsername(value);
+    if (validationError) {
+      setUsernameError(validationError);
+      return;
+    }
+
+    // Check uniqueness (debounced)
+    setCheckingUsername(true);
+    const isAvailable = await checkUsernameAvailability(value);
+    setCheckingUsername(false);
+    
+    if (!isAvailable) {
+      setUsernameError('This username is already taken');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
     setMessage(null);
+    setUsernameError(null);
 
     const supabase = createSupabaseClient();
 
     try {
       if (isSignUp) {
+        // Validate username
+        if (!username) {
+          setUsernameError('Username is required');
+          setLoading(false);
+          return;
+        }
+
+        const validationError = validateUsername(username);
+        if (validationError) {
+          setUsernameError(validationError);
+          setLoading(false);
+          return;
+        }
+
+        // Check username availability one more time
+        const isAvailable = await checkUsernameAvailability(username);
+        if (!isAvailable) {
+          setUsernameError('This username is already taken');
+          setLoading(false);
+          return;
+        }
+
+        // Sign up user
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -32,6 +112,23 @@ export default function LoginPage() {
         if (error) throw error;
 
         if (data.user) {
+          // Create profile with username (lowercase for consistency)
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .insert({
+              user_id: data.user.id,
+              display_name: username, // Default to username, can be changed later
+              contact_info: email, // Default to email, can be changed later
+              username: username.toLowerCase(), // Store lowercase
+            });
+
+          if (profileError) {
+            console.error('Profile creation error:', profileError);
+            // If profile creation fails, we should still allow login but show error
+            setError('Account created but profile setup failed. Please try logging in.');
+            return;
+          }
+
           setMessage('Account created! Redirecting to your profile...');
           setTimeout(() => {
             router.push('/profile');
@@ -85,6 +182,40 @@ export default function LoginPage() {
               </p>
             </div>
 
+            {isSignUp && (
+              <div>
+                <label htmlFor="username" className="block text-sm font-medium mb-1">
+                  Username
+                </label>
+                <input
+                  id="username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => handleUsernameChange(e.target.value)}
+                  required
+                  minLength={3}
+                  maxLength={30}
+                  pattern="[a-zA-Z0-9_-]+"
+                  className={`w-full px-3 py-2 border rounded-md ${
+                    usernameError ? 'border-red-500' : ''
+                  }`}
+                  placeholder="username"
+                />
+                {checkingUsername && (
+                  <p className="text-xs text-gray-500 mt-1">Checking availability...</p>
+                )}
+                {usernameError && (
+                  <p className="text-xs text-red-600 mt-1">{usernameError}</p>
+                )}
+                {!usernameError && username && !checkingUsername && (
+                  <p className="text-xs text-green-600 mt-1">✓ Username available</p>
+                )}
+                <p className="text-xs text-gray-500 mt-1">
+                  3-30 characters, letters, numbers, underscores, and hyphens only
+                </p>
+              </div>
+            )}
+
             <div>
               <label htmlFor="password" className="block text-sm font-medium mb-1">
                 Password
@@ -115,7 +246,7 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || (isSignUp && (!!usernameError || checkingUsername || !username))}
               className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50"
             >
               {loading ? 'Loading...' : isSignUp ? 'Sign Up' : 'Login'}
@@ -128,6 +259,8 @@ export default function LoginPage() {
                 setIsSignUp(!isSignUp);
                 setError(null);
                 setMessage(null);
+                setUsername('');
+                setUsernameError(null);
               }}
               className="text-sm text-blue-600 hover:underline"
             >

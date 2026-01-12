@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Card, Profile } from '@/lib/supabase/types';
 import { createSupabaseClient } from '@/lib/supabase/client';
 import { getCardDisplayName } from '@/lib/card-display';
@@ -320,7 +321,7 @@ export default function SearchPage() {
   return (
     <main className="min-h-screen p-8">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6">Search & Matchmaking</h1>
+        <h1 className="text-3xl font-bold mb-6">Search for a trade</h1>
 
         <div className="bg-white border rounded-lg p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4">Search Filters</h2>
@@ -328,7 +329,7 @@ export default function SearchPage() {
           <div className="grid md:grid-cols-2 gap-6 mb-4">
             <div>
               <label className="block text-sm font-medium mb-2">
-                Users who HAVE these cards:
+                Cards I'm looking for:
               </label>
               <CardMultiSelect
                 cards={allCards}
@@ -341,7 +342,7 @@ export default function SearchPage() {
 
             <div>
               <label className="block text-sm font-medium mb-2">
-                Users who WANT these cards:
+                Cards I'm willing to trade:
               </label>
               <CardMultiSelect
                 cards={allCards}
@@ -384,7 +385,15 @@ export default function SearchPage() {
               <div key={result.profile.id} className="bg-white border rounded-lg p-6">
                 <div className="mb-4">
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-lg font-semibold">{result.profile.display_name}</h3>
+                    <div>
+                      {result.profile.username ? (
+                        <Link href={`/${result.profile.username}`} className="text-lg font-semibold hover:text-blue-600 hover:underline">
+                          {result.profile.display_name}
+                        </Link>
+                      ) : (
+                        <h3 className="text-lg font-semibold">{result.profile.display_name}</h3>
+                      )}
+                    </div>
                     <span className="text-sm font-medium text-blue-600">
                       {result.matchScore} matching card{result.matchScore !== 1 ? 's' : ''}
                     </span>

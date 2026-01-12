@@ -3,7 +3,7 @@ import "./globals.css";
 import Navigation from "@/components/Navigation";
 
 export const metadata: Metadata = {
-  title: "Riftbound Card Swap",
+  title: "RifTrade - Riftbound Card Swap",
   description: "A community card swap directory for Riftbound TCG",
 };
 
