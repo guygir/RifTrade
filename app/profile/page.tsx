@@ -42,9 +42,15 @@ export default function ProfilePage() {
     // Load profile and cards for editing
     await loadProfile(user.id);
     await loadCards();
+    
+    // Note: Don't recalculate matches on every profile page load - too expensive
+    // Matches will be recalculated when:
+    // 1. User changes their cards (in onSelectionChange)
+    // 2. User views another profile (in [username]/page.tsx)
+    // 3. User opens notification bell (in NotificationBell.tsx)
   };
 
-  const loadProfile = async (userId: string) => {
+  const loadProfile = async (userId: string): Promise<Profile | null> => {
     const supabase = createSupabaseClient();
     
     // Load profile
@@ -119,6 +125,7 @@ export default function ProfilePage() {
     }
 
     setLoading(false);
+    return profileData || null;
   };
 
   const loadCards = async () => {
@@ -464,8 +471,7 @@ export default function ProfilePage() {
                       .delete()
                       .eq('profile_id', profile.id);
                     await loadProfile(profile.user_id);
-                    // Recalculate matches after clearing have cards
-                    await detectAndStoreMatches(profile.id);
+                    // Note: Matches will be recalculated on next page load
                   }}
                   className="px-3 py-1 text-sm border rounded-md hover:bg-gray-50"
                 >
@@ -500,7 +506,7 @@ export default function ProfilePage() {
                   
                   setHaveCards(updatedCards);
                   
-                  // Save to DB in background (don't wait or refresh)
+                  // Save to DB in background, then recalculate matches
                   (async () => {
                     try {
                       // Remove all existing
@@ -534,10 +540,8 @@ export default function ProfilePage() {
                         }
                       }
                       
-                      // Recalculate matches in background (don't block UI)
-                      detectAndStoreMatches(profile.id).catch(err => {
-                        console.error('Error recalculating matches:', err);
-                      });
+                      // Note: Matches will be recalculated on next page load
+                      // This avoids timing issues and keeps the logic simple
                     } catch (err) {
                       console.error('Error saving cards:', err);
                       // On error, refresh from DB to sync
@@ -559,8 +563,7 @@ export default function ProfilePage() {
                     .delete()
                     .eq('profile_id', profile.id);
                   await loadProfile(profile.user_id);
-                  // Recalculate matches after clearing want cards
-                  await detectAndStoreMatches(profile.id);
+                  // Note: Matches will be recalculated on next page load
                 }}
                 className="px-3 py-1 text-sm border rounded-md hover:bg-gray-50"
               >
@@ -629,10 +632,8 @@ export default function ProfilePage() {
                       }
                     }
                     
-                    // Recalculate matches in background (don't block UI)
-                    detectAndStoreMatches(profile.id).catch(err => {
-                      console.error('Error recalculating matches:', err);
-                    });
+                      // Note: Matches will be recalculated on next page load
+                      // This avoids timing issues and keeps the logic simple
                   } catch (err) {
                     console.error('Error saving cards:', err);
                     // On error, refresh from DB to sync

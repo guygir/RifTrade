@@ -55,6 +55,16 @@ CREATE POLICY "Users can insert own matches" ON user_matches
     )
   );
 
+-- Users can delete their own matches
+CREATE POLICY "Users can delete own matches" ON user_matches
+  FOR DELETE USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE profiles.id = user_matches.user_profile_id
+      AND profiles.user_id = auth.uid()
+    )
+  );
+
 -- Function to update updated_at timestamp
 CREATE TRIGGER update_user_matches_updated_at BEFORE UPDATE ON user_matches
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

@@ -92,14 +92,16 @@ export async function calculateMatches(userProfileId: string): Promise<MatchResu
 
     // Calculate match score
     const matchedCards: Array<{ card: Card; haveQuantity: number; wantQuantity: number }> = [];
+    const matchedCardIds = new Set<string>(); // Track cards we've already matched to prevent duplicates
     let matchCount = 0;
 
     // Check: User wants cards that this profile has
     userWantCardsMap.forEach((userWantsQuantity, cardId) => {
       const profileHasQuantity = haveCardsMap.get(cardId) || 0;
-      if (profileHasQuantity > 0) {
+      if (profileHasQuantity > 0 && !matchedCardIds.has(cardId)) {
         const matchQuantity = Math.min(profileHasQuantity, userWantsQuantity);
         matchCount += matchQuantity;
+        matchedCardIds.add(cardId);
         const card = (profile.profile_have_cards || []).find((item: any) => item.cards?.id === cardId)?.cards;
         if (card) {
           matchedCards.push({
@@ -114,9 +116,10 @@ export async function calculateMatches(userProfileId: string): Promise<MatchResu
     // Check: User has cards that this profile wants
     userHaveCardsMap.forEach((userHasQuantity, cardId) => {
       const profileWantsQuantity = wantCardsMap.get(cardId) || 0;
-      if (profileWantsQuantity > 0) {
+      if (profileWantsQuantity > 0 && !matchedCardIds.has(cardId)) {
         const matchQuantity = Math.min(profileWantsQuantity, userHasQuantity);
         matchCount += matchQuantity;
+        matchedCardIds.add(cardId);
         const card = (profile.profile_want_cards || []).find((item: any) => item.cards?.id === cardId)?.cards;
         if (card) {
           matchedCards.push({

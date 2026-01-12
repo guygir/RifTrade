@@ -7,6 +7,7 @@ import { createSupabaseClient } from '@/lib/supabase/client';
 import { Card, Profile } from '@/lib/supabase/types';
 import { getCardDisplayName } from '@/lib/card-display';
 import { calculateMatches } from '@/lib/match-calculator';
+import { detectAndStoreMatches } from '@/lib/match-storage';
 
 export default function UserProfilePage() {
   const params = useParams();
@@ -75,7 +76,14 @@ export default function UserProfilePage() {
         
         if (currentUserProfile) {
           setCurrentUserProfileId(currentUserProfile.id);
-          // Calculate matches between current user and this profile
+          
+          // Recalculate and store matches for current user (picks up changes from other users)
+          // Do this in background to avoid blocking profile display
+          detectAndStoreMatches(currentUserProfile.id).catch(err => {
+            console.error('Error recalculating matches:', err);
+          });
+          
+          // Calculate and display matches between current user and this profile
           await calculateAndDisplayMatches(currentUserProfile.id, profileData.id);
         }
       } else {

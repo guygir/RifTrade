@@ -21,10 +21,13 @@ export default function NotificationBell() {
   const checkingRef = useRef(false); // Prevent concurrent checks
   const profileIdRef = useRef<string | null>(null); // Cache profile ID
 
-  // Memoize checkMatches to prevent recreation on every render
+  // Check matches on page load
   const checkMatches = useCallback(async () => {
     // Prevent concurrent calls
-    if (checkingRef.current) return;
+    if (checkingRef.current) {
+      console.log('Skipping checkMatches - already in progress');
+      return;
+    }
     checkingRef.current = true;
 
     try {
@@ -35,6 +38,7 @@ export default function NotificationBell() {
         setNewMatchesCount(0);
         setMatches([]);
         profileIdRef.current = null;
+        checkingRef.current = false;
         return;
       }
 
@@ -47,28 +51,33 @@ export default function NotificationBell() {
           .eq('user_id', user.id)
           .single();
 
-        if (!profile) return;
+        if (!profile) {
+          checkingRef.current = false;
+          return;
+        }
         profileId = profile.id;
         profileIdRef.current = profileId;
       }
 
-      // Recalculate matches to ensure they're up-to-date (picks up changes from other users)
-      // Then get new matches count
+      // Recalculate matches on page load to ensure we have latest data
       if (profileId) {
-        // Recalculate matches first to ensure we have the latest data
+        console.log('Recalculating matches for profile:', profileId);
         await detectAndStoreMatches(profileId);
         // Then get the count of new matches
         const count = await getNewMatchesCount(profileId);
+        console.log('New matches count:', count);
         setNewMatchesCount(count);
       }
-
-      // Note: Don't auto-load matches here - only load when bell is clicked
+    } catch (err) {
+      console.error('Error in checkMatches:', err);
     } finally {
       checkingRef.current = false;
     }
-  }, []); // Empty deps - use refs for isOpen to avoid recreating
+  }, [pathname]); // Include pathname in deps so it recreates on route change
 
   useEffect(() => {
+    // Reset checking ref on pathname change to ensure recalculation happens
+    checkingRef.current = false;
     // Check for matches count when component mounts or route changes (page loads/navigates)
     checkMatches();
   }, [checkMatches, pathname]);
@@ -95,6 +104,7 @@ export default function NotificationBell() {
     const supabase = createSupabaseClient();
 
     try {
+      // Just load matches from database (no recalculation - that happens on page load)
       const { data: matchesData, error } = await supabase
         .from('user_matches')
         .select(`

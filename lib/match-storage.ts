@@ -9,13 +9,17 @@ export async function detectAndStoreMatches(userProfileId: string): Promise<numb
   const supabase = createSupabaseClient();
   
   // Calculate current matches
+  console.log(`Recalculating matches for profile: ${userProfileId}`);
   const currentMatches = await calculateMatches(userProfileId);
+  console.log(`Found ${currentMatches.length} current matches`);
   
   // Get existing matches from database
   const { data: existingMatches, error: fetchError } = await supabase
     .from('user_matches')
     .select('*')
     .eq('user_profile_id', userProfileId);
+  
+  console.log(`Found ${existingMatches?.length || 0} existing matches in database`);
 
   if (fetchError) {
     console.error('Error fetching existing matches:', fetchError);
@@ -50,9 +54,9 @@ export async function detectAndStoreMatches(userProfileId: string): Promise<numb
       newMatchesCount++;
     } else if (existing.match_count !== match.matchCount) {
       // Match count changed - update
+      // If count goes to 0, it will be handled by deletion logic below
       // Mark as new if count changed (either increased or decreased) and was previously seen
-      // This ensures users are notified of any match updates
-      const shouldMarkAsNew = !existing.is_new;
+      const shouldMarkAsNew = !existing.is_new && match.matchCount > 0;
       updates.push({
         id: existing.id,
         match_count: match.matchCount,
@@ -100,6 +104,7 @@ export async function detectAndStoreMatches(userProfileId: string): Promise<numb
   // Execute deletes
   if (toDelete.length > 0) {
     const deleteIds = toDelete.map(m => m.id);
+    console.log(`Deleting ${toDelete.length} matches that no longer exist:`, deleteIds);
     const { error } = await supabase
       .from('user_matches')
       .delete()
@@ -107,7 +112,11 @@ export async function detectAndStoreMatches(userProfileId: string): Promise<numb
     
     if (error) {
       console.error('Error deleting matches:', error);
+    } else {
+      console.log('Successfully deleted matches');
     }
+  } else {
+    console.log('No matches to delete');
   }
 
   // Update last_match_check timestamp
