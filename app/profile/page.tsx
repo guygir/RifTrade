@@ -480,36 +480,71 @@ export default function ProfilePage() {
                 selectedCards={haveCards}
                 onSelectionChange={async (cardSelections: Array<{ cardId: string; quantity: number }>) => {
                   const supabase = createSupabaseClient();
-                  // Remove all existing
-                  const { error: deleteError } = await supabase
-                    .from('profile_have_cards')
-                    .delete()
-                    .eq('profile_id', profile.id);
                   
-                  if (deleteError) {
-                    console.error('Error deleting cards:', deleteError);
-                    await loadProfile(profile.user_id);
-                    return;
-                  }
+                  // Optimistically update local state immediately (no DB refresh)
+                  const updatedCards = cardSelections.map(({ cardId, quantity }) => {
+                    const card = allCards.find(c => c.id === cardId);
+                    return card ? { ...card, quantity: quantity || 1, relationId: cardId } : null;
+                  }).filter(Boolean) as Array<Card & { quantity: number; relationId: string }>;
                   
-                  // Add new ones with quantities
-                  if (cardSelections.length > 0) {
-                    const { error: insertError } = await supabase
-                      .from('profile_have_cards')
-                      .insert(cardSelections.map(({ cardId, quantity }) => ({
-                        profile_id: profile.id,
-                        card_id: cardId,
-                        quantity: quantity || 1,
-                      })));
-                    
-                  if (insertError) {
-                    console.error('Error inserting cards:', insertError);
-                  }
-                }
-                await loadProfile(profile.user_id);
-                // Recalculate matches after updating have cards
-                await detectAndStoreMatches(profile.id);
-              }}
+                  // Sort updated cards
+                  updatedCards.sort((a: any, b: any) => {
+                    if (a.set_code !== b.set_code) {
+                      return (a.set_code || '').localeCompare(b.set_code || '');
+                    }
+                    if (!a.sort_key && !b.sort_key) return 0;
+                    if (!a.sort_key) return 1;
+                    if (!b.sort_key) return -1;
+                    return a.sort_key.localeCompare(b.sort_key, undefined, { numeric: true, sensitivity: 'base' });
+                  });
+                  
+                  setHaveCards(updatedCards);
+                  
+                  // Save to DB in background (don't wait or refresh)
+                  (async () => {
+                    try {
+                      // Remove all existing
+                      const { error: deleteError } = await supabase
+                        .from('profile_have_cards')
+                        .delete()
+                        .eq('profile_id', profile.id);
+                      
+                      if (deleteError) {
+                        console.error('Error deleting cards:', deleteError);
+                        // On error, refresh from DB to sync
+                        await loadProfile(profile.user_id);
+                        return;
+                      }
+                      
+                      // Add new ones with quantities
+                      if (cardSelections.length > 0) {
+                        const { error: insertError } = await supabase
+                          .from('profile_have_cards')
+                          .insert(cardSelections.map(({ cardId, quantity }) => ({
+                            profile_id: profile.id,
+                            card_id: cardId,
+                            quantity: quantity || 1,
+                          })));
+                        
+                        if (insertError) {
+                          console.error('Error inserting cards:', insertError);
+                          // On error, refresh from DB to sync
+                          await loadProfile(profile.user_id);
+                          return;
+                        }
+                      }
+                      
+                      // Recalculate matches in background (don't block UI)
+                      detectAndStoreMatches(profile.id).catch(err => {
+                        console.error('Error recalculating matches:', err);
+                      });
+                    } catch (err) {
+                      console.error('Error saving cards:', err);
+                      // On error, refresh from DB to sync
+                      await loadProfile(profile.user_id);
+                    }
+                  })();
+                }}
             />
           </div>
 
@@ -540,35 +575,70 @@ export default function ProfilePage() {
               selectedCards={wantCards}
               onSelectionChange={async (cardSelections: Array<{ cardId: string; quantity: number }>) => {
                 const supabase = createSupabaseClient();
-                // Remove all existing
-                const { error: deleteError } = await supabase
-                  .from('profile_want_cards')
-                  .delete()
-                  .eq('profile_id', profile.id);
                 
-                if (deleteError) {
-                  console.error('Error deleting cards:', deleteError);
-                  await loadProfile(profile.user_id);
-                  return;
-                }
+                // Optimistically update local state immediately (no DB refresh)
+                const updatedCards = cardSelections.map(({ cardId, quantity }) => {
+                  const card = allCards.find(c => c.id === cardId);
+                  return card ? { ...card, quantity: quantity || 1, relationId: cardId } : null;
+                }).filter(Boolean) as Array<Card & { quantity: number; relationId: string }>;
                 
-                // Add new ones with quantities
-                if (cardSelections.length > 0) {
-                  const { error: insertError } = await supabase
-                    .from('profile_want_cards')
-                    .insert(cardSelections.map(({ cardId, quantity }) => ({
-                      profile_id: profile.id,
-                      card_id: cardId,
-                      quantity: quantity || 1,
-                    })));
-                    
-                  if (insertError) {
-                    console.error('Error inserting cards:', insertError);
+                // Sort updated cards
+                updatedCards.sort((a: any, b: any) => {
+                  if (a.set_code !== b.set_code) {
+                    return (a.set_code || '').localeCompare(b.set_code || '');
                   }
-                }
-                await loadProfile(profile.user_id);
-                // Recalculate matches after updating want cards
-                await detectAndStoreMatches(profile.id);
+                  if (!a.sort_key && !b.sort_key) return 0;
+                  if (!a.sort_key) return 1;
+                  if (!b.sort_key) return -1;
+                  return a.sort_key.localeCompare(b.sort_key, undefined, { numeric: true, sensitivity: 'base' });
+                });
+                
+                setWantCards(updatedCards);
+                
+                // Save to DB in background (don't wait or refresh)
+                (async () => {
+                  try {
+                    // Remove all existing
+                    const { error: deleteError } = await supabase
+                      .from('profile_want_cards')
+                      .delete()
+                      .eq('profile_id', profile.id);
+                    
+                    if (deleteError) {
+                      console.error('Error deleting cards:', deleteError);
+                      // On error, refresh from DB to sync
+                      await loadProfile(profile.user_id);
+                      return;
+                    }
+                    
+                    // Add new ones with quantities
+                    if (cardSelections.length > 0) {
+                      const { error: insertError } = await supabase
+                        .from('profile_want_cards')
+                        .insert(cardSelections.map(({ cardId, quantity }) => ({
+                          profile_id: profile.id,
+                          card_id: cardId,
+                          quantity: quantity || 1,
+                        })));
+                      
+                      if (insertError) {
+                        console.error('Error inserting cards:', insertError);
+                        // On error, refresh from DB to sync
+                        await loadProfile(profile.user_id);
+                        return;
+                      }
+                    }
+                    
+                    // Recalculate matches in background (don't block UI)
+                    detectAndStoreMatches(profile.id).catch(err => {
+                      console.error('Error recalculating matches:', err);
+                    });
+                  } catch (err) {
+                    console.error('Error saving cards:', err);
+                    // On error, refresh from DB to sync
+                    await loadProfile(profile.user_id);
+                  }
+                })();
               }}
             />
             </div>

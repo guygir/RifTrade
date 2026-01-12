@@ -328,41 +328,52 @@ function CardImageGrid({ cards }: { cards: Array<Card & { quantity: number }> })
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
       {cards.map((card) => (
-        <div
-          key={card.id}
-          className="relative border rounded-lg overflow-hidden hover:shadow-lg transition-shadow group"
-        >
-          {card.image_url ? (
-            <img
-              src={card.image_url}
-              alt={card.name}
-              className="w-full aspect-[63/88] object-cover"
-              onError={(e) => {
-                // Fallback if image fails to load
-                (e.target as HTMLImageElement).style.display = 'none';
-                const parent = (e.target as HTMLImageElement).parentElement;
-                if (parent) {
-                  parent.innerHTML = `<div class="w-full aspect-[63/88] bg-gray-200 flex items-center justify-center text-xs text-gray-500 p-2 text-center">${card.name}</div>`;
-                }
-              }}
-            />
-          ) : (
-            <div className="w-full aspect-[63/88] bg-gray-200 flex items-center justify-center text-xs text-gray-500 p-2 text-center">
-              {card.name}
-            </div>
-          )}
-          {card.quantity > 1 && (
-            <div className="absolute top-2 right-2 bg-blue-600 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
-              {card.quantity}
-            </div>
-          )}
-          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
-            <p className="text-white text-sm font-medium text-center px-2">
-              {getCardDisplayName(card)}
-            </p>
-          </div>
-        </div>
+        <CardImage key={card.id} card={card} />
       ))}
+    </div>
+  );
+}
+
+function CardImage({ card }: { card: Card & { quantity: number } }) {
+  const [imageError, setImageError] = useState(false);
+  const [imageLoading, setImageLoading] = useState(true);
+
+  return (
+    <div className="relative border rounded-lg overflow-hidden hover:shadow-lg transition-shadow group">
+      {card.image_url && !imageError ? (
+        <>
+          {imageLoading && (
+            <div className="w-full aspect-[63/88] bg-gray-200 animate-pulse flex items-center justify-center">
+              <div className="text-xs text-gray-400">Loading...</div>
+            </div>
+          )}
+          <img
+            src={card.image_url}
+            alt={card.name}
+            className={`w-full aspect-[63/88] object-cover ${imageLoading ? 'hidden' : ''}`}
+            onLoad={() => setImageLoading(false)}
+            onError={() => {
+              setImageError(true);
+              setImageLoading(false);
+            }}
+            loading="lazy"
+          />
+        </>
+      ) : (
+        <div className="w-full aspect-[63/88] bg-gray-200 flex items-center justify-center text-xs text-gray-500 p-2 text-center">
+          {card.name}
+        </div>
+      )}
+      {card.quantity > 1 && (
+        <div className="absolute top-2 right-2 bg-blue-600 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+          {card.quantity}
+        </div>
+      )}
+      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
+        <p className="text-white text-sm font-medium text-center px-2">
+          {getCardDisplayName(card)}
+        </p>
+      </div>
     </div>
   );
 }
