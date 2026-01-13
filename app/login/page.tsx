@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createSupabaseClient } from '@/lib/supabase/client';
+import { sanitizeDisplayName, sanitizeContactInfo, sanitizeUsername } from '@/lib/sanitize-input';
 
 export default function LoginPage() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -112,14 +113,19 @@ export default function LoginPage() {
         if (error) throw error;
 
         if (data.user) {
+          // Sanitize inputs before saving
+          const sanitizedUsername = sanitizeUsername(username);
+          const sanitizedDisplayName = sanitizeDisplayName(username); // Default to username, can be changed later
+          const sanitizedContactInfo = sanitizeContactInfo(email); // Default to email, can be changed later
+          
           // Create profile with username (lowercase for consistency)
           const { error: profileError } = await supabase
             .from('profiles')
             .insert({
               user_id: data.user.id,
-              display_name: username, // Default to username, can be changed later
-              contact_info: email, // Default to email, can be changed later
-              username: username.toLowerCase(), // Store lowercase
+              display_name: sanitizedDisplayName,
+              contact_info: sanitizedContactInfo,
+              username: sanitizedUsername,
             });
 
           if (profileError) {

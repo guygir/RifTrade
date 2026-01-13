@@ -11,6 +11,7 @@ export default function CardsPage() {
   const [userHaveCards, setUserHaveCards] = useState<Set<string>>(new Set());
   const [userWantCards, setUserWantCards] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSets, setSelectedSets] = useState<Set<string>>(new Set(['OGN'])); // Default: only OGN
   const [showOwned, setShowOwned] = useState(true);
@@ -23,6 +24,8 @@ export default function CardsPage() {
 
   const loadCards = async () => {
     try {
+      setError(null);
+      console.log('[CardsPage] Starting to load cards...');
       const supabase = createSupabaseClient();
       const { data, error } = await supabase
         .from('cards')
@@ -31,10 +34,16 @@ export default function CardsPage() {
         .order('sort_key', { ascending: true, nullsFirst: false })
         .order('collector_number');
 
-      if (error) throw error;
+      if (error) {
+        console.error('[CardsPage] Supabase error:', error);
+        throw error;
+      }
+      
+      console.log('[CardsPage] Loaded cards:', data?.length || 0);
       setCards(data || []);
-    } catch (err) {
-      console.error('Error loading cards:', err);
+    } catch (err: any) {
+      console.error('[CardsPage] Error loading cards:', err);
+      setError(err?.message || 'Failed to load cards. Please refresh the page.');
     } finally {
       setLoading(false);
     }
@@ -104,6 +113,29 @@ export default function CardsPage() {
       <main className="min-h-screen p-8">
         <div className="max-w-6xl mx-auto">
           <p className="text-center">Loading cards...</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (error) {
+    return (
+      <main className="min-h-screen p-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+            <h2 className="text-lg font-semibold text-red-800 mb-2">Error Loading Cards</h2>
+            <p className="text-red-600">{error}</p>
+            <button
+              onClick={() => {
+                setLoading(true);
+                setError(null);
+                loadCards();
+              }}
+              className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+            >
+              Retry
+            </button>
+          </div>
         </div>
       </main>
     );

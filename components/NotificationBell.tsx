@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { createSupabaseClient } from '@/lib/supabase/client';
 import { Profile, UserMatch } from '@/lib/supabase/types';
 import { getNewMatchesCount, markMatchesAsRead, detectAndStoreMatches } from '@/lib/match-storage';
+import { sanitizeText } from '@/lib/sanitize';
 
 interface MatchWithProfile extends UserMatch {
   matched_profile: Profile;
@@ -230,7 +231,7 @@ export default function NotificationBell() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <span className="font-medium">
-                          {match.matched_profile.display_name}
+                          {sanitizeText(match.matched_profile.display_name)}
                         </span>
                         {match.is_new && (
                           <span className="bg-blue-600 text-white text-xs px-2 py-0.5 rounded">

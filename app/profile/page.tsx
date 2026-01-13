@@ -7,6 +7,7 @@ import { createSupabaseClient } from '@/lib/supabase/client';
 import { Card, Profile, ProfileHaveCard, ProfileWantCard } from '@/lib/supabase/types';
 import { getCardDisplayName } from '@/lib/card-display';
 import { detectAndStoreMatches } from '@/lib/match-storage';
+import { sanitizeDisplayName, sanitizeContactInfo, sanitizeTradingLocations, sanitizeUsername } from '@/lib/sanitize-input';
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -269,19 +270,27 @@ export default function ProfilePage() {
 
       let newUsername: string | null = null;
       
+      // Sanitize all inputs before saving
+      const sanitizedDisplayName = sanitizeDisplayName(displayName);
+      const sanitizedContactInfo = sanitizeContactInfo(contactInfo);
+      const sanitizedTradingLocations = sanitizeTradingLocations(tradingLocations);
+      
       if (profile) {
         // Update existing profile
         const updateData: any = {
-          display_name: displayName,
-          contact_info: contactInfo,
-          trading_locations: tradingLocations || null,
+          display_name: sanitizedDisplayName,
+          contact_info: sanitizedContactInfo,
+          trading_locations: sanitizedTradingLocations || null,
           updated_at: new Date().toISOString(),
         };
         
         // Only update username if it changed or if profile doesn't have one
         if (username && (username.toLowerCase() !== profile.username?.toLowerCase() || !profile.username)) {
-          updateData.username = username.toLowerCase();
-          newUsername = updateData.username;
+          const sanitizedUsername = sanitizeUsername(username);
+          if (sanitizedUsername) {
+            updateData.username = sanitizedUsername;
+            newUsername = updateData.username;
+          }
         }
 
         const { error } = await supabase
@@ -298,14 +307,21 @@ export default function ProfilePage() {
           return;
         }
 
-        newUsername = username.toLowerCase();
+        const sanitizedUsername = sanitizeUsername(username);
+        if (!sanitizedUsername) {
+          setUsernameError('Invalid username');
+          setSaving(false);
+          return;
+        }
+
+        newUsername = sanitizedUsername;
         const { data: newProfile, error } = await supabase
           .from('profiles')
           .insert({
             user_id: user.id,
-            display_name: displayName,
-            contact_info: contactInfo,
-            trading_locations: tradingLocations || null,
+            display_name: sanitizedDisplayName,
+            contact_info: sanitizedContactInfo,
+            trading_locations: sanitizedTradingLocations || null,
             username: newUsername,
           })
           .select()

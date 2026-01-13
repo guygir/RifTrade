@@ -8,11 +8,13 @@ import { Card, Profile } from '@/lib/supabase/types';
 import { getCardDisplayName } from '@/lib/card-display';
 import { calculateMatches } from '@/lib/match-calculator';
 import { detectAndStoreMatches } from '@/lib/match-storage';
+import { validateUsernameFromUrl } from '@/lib/validate-username';
+import { sanitizeText, sanitizeContactInfo } from '@/lib/sanitize';
 
 export default function UserProfilePage() {
   const params = useParams();
   const router = useRouter();
-  const username = params?.username as string;
+  const rawUsername = params?.username as string;
   
   const [profile, setProfile] = useState<Profile | null>(null);
   const [haveCards, setHaveCards] = useState<Array<Card & { quantity: number }>>([]);
@@ -26,10 +28,19 @@ export default function UserProfilePage() {
   const [currentUserProfileId, setCurrentUserProfileId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (username) {
-      loadProfile();
+    // Validate username from URL parameter
+    const validation = validateUsernameFromUrl(rawUsername);
+    if (!validation.valid) {
+      console.error('[UserProfilePage] Invalid username:', validation.error);
+      setNotFound(true);
+      setLoading(false);
+      return;
     }
-  }, [username]);
+
+    if (validation.sanitized) {
+      loadProfile(validation.sanitized);
+    }
+  }, [rawUsername]);
 
   // Redirect to profile editor if viewing own profile
   useEffect(() => {
@@ -38,7 +49,7 @@ export default function UserProfilePage() {
     }
   }, [isOwnProfile, loading, router]);
 
-  const loadProfile = async () => {
+  const loadProfile = async (username: string) => {
     if (!username) return;
     
     setLoading(true);
@@ -50,7 +61,7 @@ export default function UserProfilePage() {
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
-        .ilike('username', username.toLowerCase())
+        .ilike('username', username)
         .single();
 
       if (profileError || !profileData) {
@@ -249,7 +260,7 @@ export default function UserProfilePage() {
     <main className="min-h-screen p-8">
       <div className="max-w-4xl mx-auto">
         <div className="mb-6 flex justify-between items-center">
-          <h1 className="text-3xl font-bold">{profile.display_name}'s Profile</h1>
+          <h1 className="text-3xl font-bold">{sanitizeText(profile.display_name)}'s Profile</h1>
           <Link href="/" className="px-4 py-2 border rounded-md hover:bg-gray-50">
             Home
           </Link>
@@ -261,13 +272,13 @@ export default function UserProfilePage() {
           <div className="space-y-3">
             <div>
               <strong className="text-sm text-gray-600">Contact:</strong>
-              <p className="mt-1">{profile.contact_info}</p>
+              <p className="mt-1" dangerouslySetInnerHTML={{ __html: sanitizeContactInfo(profile.contact_info) }} />
             </div>
             
             {profile.trading_locations && (
               <div>
                 <strong className="text-sm text-gray-600">Trading Locations:</strong>
-                <p className="mt-1">{profile.trading_locations}</p>
+                <p className="mt-1">{sanitizeText(profile.trading_locations)}</p>
               </div>
             )}
           </div>

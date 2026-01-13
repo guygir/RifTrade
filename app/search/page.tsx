@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Card, Profile } from '@/lib/supabase/types';
 import { createSupabaseClient } from '@/lib/supabase/client';
 import { getCardDisplayName } from '@/lib/card-display';
+import { sanitizeText, sanitizeContactInfo } from '@/lib/sanitize';
 
 interface SearchResult {
   profile: Profile;
@@ -388,10 +389,10 @@ export default function SearchPage() {
                     <div>
                       {result.profile.username ? (
                         <Link href={`/${result.profile.username}`} className="text-lg font-semibold hover:text-blue-600 hover:underline">
-                          {result.profile.display_name}
+                          {sanitizeText(result.profile.display_name)}
                         </Link>
                       ) : (
-                        <h3 className="text-lg font-semibold">{result.profile.display_name}</h3>
+                        <h3 className="text-lg font-semibold">{sanitizeText(result.profile.display_name)}</h3>
                       )}
                     </div>
                     <span className="text-sm font-medium text-blue-600">
@@ -399,11 +400,11 @@ export default function SearchPage() {
                     </span>
                   </div>
                   <p className="text-sm text-gray-600 mt-1">
-                    <strong>Contact:</strong> {result.profile.contact_info}
+                    <strong>Contact:</strong> <span dangerouslySetInnerHTML={{ __html: sanitizeContactInfo(result.profile.contact_info) }} />
                   </p>
                   {result.profile.trading_locations && (
                     <p className="text-sm text-gray-600 mt-1">
-                      <strong>Locations:</strong> {result.profile.trading_locations}
+                      <strong>Locations:</strong> {sanitizeText(result.profile.trading_locations)}
                     </p>
                   )}
                   {result.matchedCards.length > 0 && (
