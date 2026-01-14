@@ -457,7 +457,7 @@ export default function ProfilePage() {
                 value={tradingLocations}
                 onChange={(e) => setTradingLocations(e.target.value)}
                 className="w-full px-3 py-2 border rounded-md"
-                placeholder="Tel Aviv, Jerusalem, etc."
+                placeholder="Can be a city (Tel Aviv, Jerusalem), Store (Sirolynia, Topdeck, Rotemz), Deliveries (Locker Done), etc."
               />
               <p className="text-xs text-gray-500 mt-1">
                 List cities or areas where you're available for in-person trades (optional).
