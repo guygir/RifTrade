@@ -31,6 +31,21 @@ yarn-error.log*
 # sensitive credentials (do not commit)
 SUPABASE_CREDENTIALS.md
 
+# local documentation (keep locally, don't push to GitHub)
+CONVERSATION_SUMMARY.md
+DEPLOYMENT.md
+DEPLOYMENT_STEPS.md
+IMPLEMENTATION_PLAN.md
+IMPLEMENTATION_SUMMARY.md
+PROGRESS.md
+SAFARI_CACHE_PREVENTION.md
+SECURITY.md
+SECURITY_TESTING_GUIDE.md
+SUPABASE_EMAIL_SETUP.md
+SUPABASE_SECURITY_ANALYSIS.md
+SUPABASE_SETUP.md
+riftbound_card_swap_app_project_guide.md
+
 # vercel
 .vercel
 
