@@ -26,9 +26,9 @@ jobs:
         run: npm ci
       
       - name: Run linter
-        run: npm run lint || true
         continue-on-error: true
-        # Note: Linter warnings won't block PR, but errors will be visible
+        run: npm run lint
+        # Note: Linter errors/warnings won't block PR, but will be visible in checks
       
       - name: Type check
         run: npx tsc --noEmit
