@@ -32,6 +32,7 @@ yarn-error.log*
 SUPABASE_CREDENTIALS.md
 
 # local documentation (keep locally, don't push to GitHub)
+BRANCH_PROTECTION_SETUP.md
 CONVERSATION_SUMMARY.md
 DEPLOYMENT.md
 DEPLOYMENT_STEPS.md
