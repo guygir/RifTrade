@@ -8,6 +8,7 @@ import { Card, Profile, ProfileHaveCard, ProfileWantCard } from '@/lib/supabase/
 import { getCardDisplayName } from '@/lib/card-display';
 import { detectAndStoreMatches } from '@/lib/match-storage';
 import { sanitizeDisplayName, sanitizeContactInfo, sanitizeTradingLocations, sanitizeUsername } from '@/lib/sanitize-input';
+import { generateCardListPDF, generateCardListTextFile, CardForExport } from '@/lib/pdf-export';
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -22,6 +23,11 @@ export default function ProfilePage() {
   const [username, setUsername] = useState('');
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [checkingUsername, setCheckingUsername] = useState(false);
+  const [exportingHavePDF, setExportingHavePDF] = useState(false);
+  const [exportingWantPDF, setExportingWantPDF] = useState(false);
+  const [downloadingHaveList, setDownloadingHaveList] = useState(false);
+  const [downloadingWantList, setDownloadingWantList] = useState(false);
+  const [pdfProgress, setPdfProgress] = useState(0);
   const router = useRouter();
 
   useEffect(() => {
@@ -479,20 +485,90 @@ export default function ProfilePage() {
             <div className="bg-white border rounded-lg p-6 mb-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold">Cards I Have ({haveCards.length})</h2>
-                <button
-                  onClick={async () => {
-                    const supabase = createSupabaseClient();
-                    await supabase
-                      .from('profile_have_cards')
-                      .delete()
-                      .eq('profile_id', profile.id);
-                    await loadProfile(profile.user_id);
-                    // Note: Matches will be recalculated on next page load
-                  }}
-                  className="px-3 py-1 text-sm border rounded-md hover:bg-gray-50"
-                >
-                  Clear
-                </button>
+                <div className="flex gap-2 items-center">
+                  <button
+                    onClick={async () => {
+                      if (haveCards.length === 0) {
+                        alert('No cards to download');
+                        return;
+                      }
+                      setDownloadingHaveList(true);
+                      try {
+                        const cardsForExport: CardForExport[] = haveCards.map(card => ({
+                          id: card.id,
+                          name: card.name,
+                          image_url: card.image_url,
+                          rarity: card.rarity,
+                          quantity: card.quantity,
+                          public_code: card.public_code,
+                          set_code: card.set_code,
+                          collector_number: card.collector_number,
+                          metadata: card.metadata,
+                        }));
+                        generateCardListTextFile(cardsForExport, 'Cards I Have', (card) => getCardDisplayName(card as Card));
+                      } catch (error) {
+                        console.error('Error generating text file:', error);
+                        alert('Error generating text file. Please try again.');
+                      } finally {
+                        setDownloadingHaveList(false);
+                      }
+                    }}
+                    disabled={downloadingHaveList || haveCards.length === 0}
+                    className="px-3 py-1 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+                  >
+                    {downloadingHaveList ? 'Downloading...' : 'Download List'}
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (haveCards.length === 0) {
+                        alert('No cards to export');
+                        return;
+                      }
+                      setExportingHavePDF(true);
+                      try {
+                        const cardsForExport: CardForExport[] = haveCards.map(card => ({
+                          id: card.id,
+                          name: card.name,
+                          image_url: card.image_url,
+                          rarity: card.rarity,
+                          quantity: card.quantity,
+                          public_code: card.public_code,
+                          set_code: card.set_code,
+                          collector_number: card.collector_number,
+                          metadata: card.metadata,
+                        }));
+                        setPdfProgress(0);
+                        await generateCardListPDF(cardsForExport, 'Cards I Have', (progress) => {
+                          setPdfProgress(progress);
+                        });
+                      } catch (error) {
+                        console.error('Error generating PDF:', error);
+                        alert('Error generating PDF. Please try again.');
+                      } finally {
+                        setExportingHavePDF(false);
+                        setPdfProgress(0);
+                      }
+                    }}
+                    disabled={exportingHavePDF || haveCards.length === 0}
+                    className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {exportingHavePDF ? `Generating... ${pdfProgress}%` : 'Export PDF'}
+                  </button>
+                  <button
+                    onClick={async () => {
+                      const supabase = createSupabaseClient();
+                      await supabase
+                        .from('profile_have_cards')
+                        .delete()
+                        .eq('profile_id', profile.id);
+                      await loadProfile(profile.user_id);
+                      // Note: Matches will be recalculated on next page load
+                    }}
+                    className="px-3 py-1 text-sm border rounded-md hover:bg-gray-50"
+                  >
+                    Clear
+                  </button>
+                </div>
               </div>
               <p className="text-sm text-gray-600 mb-4">
                 Select cards from your collection that you're willing to trade.
@@ -571,20 +647,90 @@ export default function ProfilePage() {
           <div className="bg-white border rounded-lg p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold">Cards I Want ({wantCards.length})</h2>
-              <button
-                onClick={async () => {
-                  const supabase = createSupabaseClient();
-                  await supabase
-                    .from('profile_want_cards')
-                    .delete()
-                    .eq('profile_id', profile.id);
-                  await loadProfile(profile.user_id);
-                  // Note: Matches will be recalculated on next page load
-                }}
-                className="px-3 py-1 text-sm border rounded-md hover:bg-gray-50"
-              >
-                Clear
-              </button>
+              <div className="flex gap-2 items-center">
+                <button
+                  onClick={async () => {
+                    if (wantCards.length === 0) {
+                      alert('No cards to download');
+                      return;
+                    }
+                    setDownloadingWantList(true);
+                    try {
+                      const cardsForExport: CardForExport[] = wantCards.map(card => ({
+                        id: card.id,
+                        name: card.name,
+                        image_url: card.image_url,
+                        rarity: card.rarity,
+                        quantity: card.quantity,
+                        public_code: card.public_code,
+                        set_code: card.set_code,
+                        collector_number: card.collector_number,
+                        metadata: card.metadata,
+                      }));
+                      generateCardListTextFile(cardsForExport, 'Cards I Want', (card) => getCardDisplayName(card as Card));
+                    } catch (error) {
+                      console.error('Error generating text file:', error);
+                      alert('Error generating text file. Please try again.');
+                    } finally {
+                      setDownloadingWantList(false);
+                    }
+                  }}
+                  disabled={downloadingWantList || wantCards.length === 0}
+                  className="px-3 py-1 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+                >
+                  {downloadingWantList ? 'Downloading...' : 'Download List'}
+                </button>
+                <button
+                  onClick={async () => {
+                    if (wantCards.length === 0) {
+                      alert('No cards to export');
+                      return;
+                    }
+                    setExportingWantPDF(true);
+                    try {
+                      const cardsForExport: CardForExport[] = wantCards.map(card => ({
+                        id: card.id,
+                        name: card.name,
+                        image_url: card.image_url,
+                        rarity: card.rarity,
+                        quantity: card.quantity,
+                        public_code: card.public_code,
+                        set_code: card.set_code,
+                        collector_number: card.collector_number,
+                        metadata: card.metadata,
+                      }));
+                      setPdfProgress(0);
+                      await generateCardListPDF(cardsForExport, 'Cards I Want', (progress) => {
+                        setPdfProgress(progress);
+                      });
+                    } catch (error) {
+                      console.error('Error generating PDF:', error);
+                      alert('Error generating PDF. Please try again.');
+                    } finally {
+                      setExportingWantPDF(false);
+                      setPdfProgress(0);
+                    }
+                  }}
+                  disabled={exportingWantPDF || wantCards.length === 0}
+                  className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                >
+                    {exportingWantPDF ? `Generating... ${pdfProgress}%` : 'Export PDF'}
+                </button>
+                <button
+                  onClick={async () => {
+                    const supabase = createSupabaseClient();
+                    await supabase
+                      .from('profile_want_cards')
+                      .delete()
+                      .eq('profile_id', profile.id);
+                    await loadProfile(profile.user_id);
+                    // Note: Matches will be recalculated on next page load
+                  }}
+                  className="px-3 py-1 text-sm border rounded-md hover:bg-gray-50"
+                >
+                  Clear
+                </button>
+              </div>
             </div>
             <p className="text-sm text-gray-600 mb-4">
               Select cards you're looking to acquire.

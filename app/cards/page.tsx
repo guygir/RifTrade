@@ -219,17 +219,25 @@ export default function CardsPage() {
               key={card.id}
               className="border rounded-lg p-4 hover:shadow-md transition-shadow"
             >
-              {card.image_url && (
-                <div className="relative w-full aspect-[63/88] mb-2 bg-gray-100 rounded">
-                  <Image
-                    src={card.image_url}
-                    alt={card.name}
-                    fill
-                    className="object-contain rounded"
-                    sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                  />
-                </div>
-              )}
+              {card.image_url && (() => {
+                const cardType = card.metadata?.classification?.type || card.metadata?.type;
+                const isBattlefield = cardType === 'Battlefield';
+                return (
+                  <div className="relative w-full aspect-[63/88] mb-2 bg-gray-100 rounded overflow-hidden">
+                    <Image
+                      src={card.image_url}
+                      alt={card.name}
+                      fill
+                      className="rounded object-contain"
+                      sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                      style={isBattlefield ? { 
+                        transform: 'rotate(90deg) scale(1.397)',
+                        transformOrigin: 'center center'
+                      } : undefined}
+                    />
+                  </div>
+                );
+              })()}
               <h3 className="font-semibold text-sm mb-1">{getCardDisplayName(card)}</h3>
               {card.rarity && (
                 <p className="text-xs text-gray-500 mt-1">{card.rarity}</p>
