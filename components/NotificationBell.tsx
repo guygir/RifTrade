@@ -175,11 +175,11 @@ export default function NotificationBell() {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={handleBellClick}
-        className="relative p-2 hover:bg-gray-100 rounded-md transition-colors"
+        className="relative p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
         aria-label="Notifications"
       >
         <svg
-          className={`w-6 h-6 ${newMatchesCount > 0 ? 'text-red-600' : 'text-gray-600'}`}
+          className={`w-6 h-6 ${newMatchesCount > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -199,22 +199,22 @@ export default function NotificationBell() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 bg-white border rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto">
-          <div className="p-4 border-b">
+        <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg dark:shadow-gray-900 z-50 max-h-96 overflow-y-auto">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
             <h3 className="font-semibold">Matches</h3>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
               {matches.length === 0 ? 'No matches yet' : `${matches.length} match${matches.length !== 1 ? 'es' : ''}`}
             </p>
           </div>
 
           {loading ? (
-            <div className="p-4 text-center text-gray-500">Loading...</div>
+            <div className="p-4 text-center text-gray-500 dark:text-gray-400">Loading...</div>
           ) : matches.length === 0 ? (
-            <div className="p-4 text-center text-gray-500 text-sm">
+            <div className="p-4 text-center text-gray-500 dark:text-gray-400 text-sm">
               No matches found. Update your have/want lists to find trading partners!
             </div>
           ) : (
-            <div className="divide-y">
+            <div className="divide-y divide-gray-200 dark:divide-gray-700">
               {matches.map((match) => (
                 <Link
                   key={match.id}
@@ -223,8 +223,8 @@ export default function NotificationBell() {
                     handleMatchClick(match.id);
                     setIsOpen(false);
                   }}
-                  className={`block p-4 hover:bg-gray-50 transition-colors ${
-                    match.is_new ? 'bg-blue-50' : ''
+                  className={`block p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
+                    match.is_new ? 'bg-blue-50 dark:bg-blue-900/30' : ''
                   }`}
                 >
                   <div className="flex items-start justify-between">
@@ -239,11 +239,11 @@ export default function NotificationBell() {
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-gray-600 mt-1">
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                         {match.match_count} matching card{match.match_count !== 1 ? 's' : ''}
                       </p>
                       {match.matched_profile.trading_locations && (
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                           📍 {match.matched_profile.trading_locations}
                         </p>
                       )}

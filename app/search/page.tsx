@@ -324,7 +324,7 @@ export default function SearchPage() {
       <div className="max-w-6xl mx-auto">
         <h1 className="text-3xl font-bold mb-6">Search for a trade</h1>
 
-        <div className="bg-white border rounded-lg p-6 mb-6">
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4">Search Filters</h2>
           
           <div className="grid md:grid-cols-2 gap-6 mb-4">
@@ -365,7 +365,7 @@ export default function SearchPage() {
             </button>
             <button
               onClick={clearSearch}
-              className="px-4 py-2 border rounded-md hover:bg-gray-50"
+              className="px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
             >
               Clear
             </button>
@@ -378,39 +378,39 @@ export default function SearchPage() {
           </h2>
 
           {results.length === 0 && !searching && (
-            <p className="text-gray-600">No results yet. Use the filters above to search.</p>
+            <p className="text-gray-600 dark:text-gray-400">No results yet. Use the filters above to search.</p>
           )}
 
           <div className="space-y-4">
             {results.map((result) => (
-              <div key={result.profile.id} className="bg-white border rounded-lg p-6">
+              <div key={result.profile.id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
                 <div className="mb-4">
                   <div className="flex items-center justify-between mb-2">
                     <div>
                       {result.profile.username ? (
-                        <Link href={`/${result.profile.username}`} className="text-lg font-semibold hover:text-blue-600 hover:underline">
+                        <Link href={`/${result.profile.username}`} className="text-lg font-semibold hover:text-blue-600 dark:hover:text-blue-400 hover:underline">
                           {sanitizeText(result.profile.display_name)}
                         </Link>
                       ) : (
                         <h3 className="text-lg font-semibold">{sanitizeText(result.profile.display_name)}</h3>
                       )}
                     </div>
-                    <span className="text-sm font-medium text-blue-600">
+                    <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
                       {result.matchScore} matching card{result.matchScore !== 1 ? 's' : ''}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-600 mt-1">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                     <strong>Contact:</strong> <span dangerouslySetInnerHTML={{ __html: sanitizeContactInfo(result.profile.contact_info) }} />
                   </p>
                   {result.profile.trading_locations && (
-                    <p className="text-sm text-gray-600 mt-1">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                       <strong>Locations:</strong> {sanitizeText(result.profile.trading_locations)}
                     </p>
                   )}
                   {result.matchedCards.length > 0 && (
-                    <div className="mt-3 p-2 bg-blue-50 rounded">
-                      <p className="text-xs font-medium text-blue-900 mb-1">Matches:</p>
-                      <ul className="text-xs text-blue-800 list-disc list-inside">
+                    <div className="mt-3 p-2 bg-blue-50 dark:bg-blue-900/30 rounded">
+                      <p className="text-xs font-medium text-blue-900 dark:text-blue-200 mb-1">Matches:</p>
+                      <ul className="text-xs text-blue-800 dark:text-blue-300 list-disc list-inside">
                         {result.matchedCards.map((match, idx) => (
                           <li key={idx}>
                             {getCardDisplayName(match.card)} - 
@@ -427,7 +427,7 @@ export default function SearchPage() {
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <h4 className="font-medium mb-2">Has ({result.haveCards.length} cards):</h4>
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
                       {result.haveCards.length > 0 ? (
                         <ul className="list-disc list-inside">
                           {result.haveCards.slice(0, 10).map(card => (
@@ -447,7 +447,7 @@ export default function SearchPage() {
 
                   <div>
                     <h4 className="font-medium mb-2">Wants ({result.wantCards.length} cards):</h4>
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
                       {result.wantCards.length > 0 ? (
                         <ul className="list-disc list-inside">
                           {result.wantCards.slice(0, 10).map(card => (
@@ -518,9 +518,9 @@ function CardMultiSelect({
           placeholder="Search cards..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="flex-1 px-3 py-2 border rounded-md"
+          className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
         />
-        <label className="flex items-center gap-2 px-3 py-2 border rounded-md cursor-pointer hover:bg-gray-50">
+        <label className="flex items-center gap-2 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-md cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
           <input
             type="checkbox"
             checked={showOnlySelected}
@@ -530,11 +530,11 @@ function CardMultiSelect({
           <span className="text-sm whitespace-nowrap">Show only selected</span>
         </label>
       </div>
-      <div className="max-h-48 overflow-y-auto border rounded-md p-2">
+      <div className="max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-md p-2 bg-white dark:bg-gray-800">
         {filteredCards.map((card) => (
           <label
             key={card.id}
-            className="flex items-center gap-2 p-1 hover:bg-gray-50 cursor-pointer text-sm"
+            className="flex items-center gap-2 p-1 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer text-sm"
           >
             <input
               type="checkbox"
@@ -546,7 +546,7 @@ function CardMultiSelect({
               {isHaveFilter && cardHaveCounts && cardHaveCounts.has(card.id) && (() => {
                 const counts = cardHaveCounts.get(card.id)!;
                 return (
-                  <span className="text-xs text-gray-500 ml-2">
+                  <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
                     [{counts.users} user{counts.users !== 1 ? 's' : ''} have this, {counts.totalQuantity} cop{counts.totalQuantity !== 1 ? 'ies' : 'y'} overall]
                   </span>
                 );
@@ -554,7 +554,7 @@ function CardMultiSelect({
               {!isHaveFilter && cardWantCounts && cardWantCounts.has(card.id) && (() => {
                 const counts = cardWantCounts.get(card.id)!;
                 return (
-                  <span className="text-xs text-gray-500 ml-2">
+                  <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
                     [{counts.users} user{counts.users !== 1 ? 's' : ''} want this, {counts.totalQuantity} cop{counts.totalQuantity !== 1 ? 'ies' : 'y'} overall]
                   </span>
                 );
@@ -564,7 +564,7 @@ function CardMultiSelect({
         ))}
       </div>
       {selectedIds.length > 0 && (
-        <p className="text-xs text-gray-500 mt-2">
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
           {selectedIds.length} card(s) selected
         </p>
       )}

@@ -164,7 +164,7 @@ export default function LoginPage() {
   return (
     <main className="min-h-screen flex items-center justify-center p-8">
       <div className="w-full max-w-md">
-        <div className="bg-white border rounded-lg p-8 shadow-sm">
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-8 shadow-sm">
           <h1 className="text-2xl font-bold mb-6">
             {isSignUp ? 'Sign Up' : 'Login'}
           </h1>
@@ -180,10 +180,10 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full px-3 py-2 border rounded-md"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 placeholder="username@example.com (or any format)"
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 Email verification is disabled. You can use any email format.
               </p>
             </div>
@@ -202,21 +202,21 @@ export default function LoginPage() {
                   minLength={3}
                   maxLength={30}
                   pattern="[a-zA-Z0-9_-]+"
-                  className={`w-full px-3 py-2 border rounded-md ${
-                    usernameError ? 'border-red-500' : ''
+                  className={`w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
+                    usernameError ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                   }`}
                   placeholder="username"
                 />
                 {checkingUsername && (
-                  <p className="text-xs text-gray-500 mt-1">Checking availability...</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Checking availability...</p>
                 )}
                 {usernameError && (
-                  <p className="text-xs text-red-600 mt-1">{usernameError}</p>
+                  <p className="text-xs text-red-600 dark:text-red-400 mt-1">{usernameError}</p>
                 )}
                 {!usernameError && username && !checkingUsername && (
-                  <p className="text-xs text-green-600 mt-1">✓ Username available</p>
+                  <p className="text-xs text-green-600 dark:text-green-400 mt-1">✓ Username available</p>
                 )}
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   3-30 characters, letters, numbers, underscores, and hyphens only
                 </p>
               </div>
@@ -233,19 +233,19 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
-                className="w-full px-3 py-2 border rounded-md"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 placeholder="••••••"
               />
             </div>
 
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-800 rounded p-3 text-sm">
+              <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 rounded p-3 text-sm">
                 {error}
               </div>
             )}
 
             {message && (
-              <div className="bg-green-50 border border-green-200 text-green-800 rounded p-3 text-sm">
+              <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 rounded p-3 text-sm">
                 {message}
               </div>
             )}
@@ -268,7 +268,7 @@ export default function LoginPage() {
                 setUsername('');
                 setUsernameError(null);
               }}
-              className="text-sm text-blue-600 hover:underline"
+              className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
             >
               {isSignUp
                 ? 'Already have an account? Login'
@@ -277,7 +277,7 @@ export default function LoginPage() {
           </div>
 
           <div className="mt-6 text-center">
-            <Link href="/" className="text-sm text-gray-600 hover:underline">
+            <Link href="/" className="text-sm text-gray-600 dark:text-gray-400 hover:underline">
               ← Back to home
             </Link>
           </div>

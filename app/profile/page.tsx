@@ -370,25 +370,25 @@ export default function ProfilePage() {
         <div className="mb-6 flex justify-between items-center">
           <h1 className="text-3xl font-bold">My Profile</h1>
           <div className="flex gap-2">
-            <Link href="/" className="px-4 py-2 border rounded-md hover:bg-gray-50">
+            <Link href="/" className="px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800">
               Home
             </Link>
             <button
               onClick={handleLogout}
-              className="px-4 py-2 border rounded-md hover:bg-gray-50"
+              className="px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800"
             >
               Logout
             </button>
           </div>
         </div>
 
-        <div className="bg-white border rounded-lg p-6 mb-6">
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4">Profile Information</h2>
           
           <div className="space-y-4">
             {(profile && !profile.username) && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded p-3 mb-4">
-                <p className="text-sm text-yellow-800">
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded p-3 mb-4">
+                <p className="text-sm text-yellow-800 dark:text-yellow-200">
                   <strong>Username Required:</strong> Please set a username to enable your public profile page.
                 </p>
               </div>
@@ -406,21 +406,21 @@ export default function ProfilePage() {
                 minLength={3}
                 maxLength={30}
                 pattern="[a-zA-Z0-9_-]+"
-                className={`w-full px-3 py-2 border rounded-md ${
-                  usernameError ? 'border-red-500' : ''
+                className={`w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
+                  usernameError ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                 }`}
                 placeholder="username"
               />
               {checkingUsername && (
-                <p className="text-xs text-gray-500 mt-1">Checking availability...</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Checking availability...</p>
               )}
               {usernameError && (
-                <p className="text-xs text-red-600 mt-1">{usernameError}</p>
+                <p className="text-xs text-red-600 dark:text-red-400 mt-1">{usernameError}</p>
               )}
               {!usernameError && username && !checkingUsername && (
-                <p className="text-xs text-green-600 mt-1">✓ Username available</p>
+                <p className="text-xs text-green-600 dark:text-green-400 mt-1">✓ Username available</p>
               )}
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 3-30 characters, letters, numbers, underscores, and hyphens only. This will be your public profile URL.
               </p>
             </div>
@@ -431,7 +431,7 @@ export default function ProfilePage() {
                 type="text"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                className="w-full px-3 py-2 border rounded-md"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 placeholder="Your name or username"
               />
             </div>
@@ -442,10 +442,10 @@ export default function ProfilePage() {
                 type="text"
                 value={contactInfo}
                 onChange={(e) => setContactInfo(e.target.value)}
-                className="w-full px-3 py-2 border rounded-md"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 placeholder="Telegram, Discord, email, phone, etc."
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 This will be visible to other users who want to trade with you.
               </p>
             </div>
@@ -456,10 +456,10 @@ export default function ProfilePage() {
                 type="text"
                 value={tradingLocations}
                 onChange={(e) => setTradingLocations(e.target.value)}
-                className="w-full px-3 py-2 border rounded-md"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 placeholder="Can be a city (Tel Aviv, Jerusalem), Store (Sirolynia, Topdeck, Rotemz), Deliveries (Locker Done), etc."
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 List cities or areas where you're available for in-person trades (optional).
               </p>
             </div>
@@ -476,7 +476,7 @@ export default function ProfilePage() {
 
         {profile && (
           <>
-            <div className="bg-white border rounded-lg p-6 mb-6">
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold">Cards I Have ({haveCards.length})</h2>
                 <button
@@ -489,12 +489,12 @@ export default function ProfilePage() {
                     await loadProfile(profile.user_id);
                     // Note: Matches will be recalculated on next page load
                   }}
-                  className="px-3 py-1 text-sm border rounded-md hover:bg-gray-50"
+                  className="px-3 py-1 text-sm border border-gray-200 dark:border-gray-700 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
                 >
                   Clear
                 </button>
               </div>
-              <p className="text-sm text-gray-600 mb-4">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                 Select cards from your collection that you're willing to trade.
               </p>
               <CardSelectorWithQuantity
@@ -568,7 +568,7 @@ export default function ProfilePage() {
             />
           </div>
 
-          <div className="bg-white border rounded-lg p-6">
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold">Cards I Want ({wantCards.length})</h2>
               <button
@@ -581,12 +581,12 @@ export default function ProfilePage() {
                   await loadProfile(profile.user_id);
                   // Note: Matches will be recalculated on next page load
                 }}
-                className="px-3 py-1 text-sm border rounded-md hover:bg-gray-50"
+                className="px-3 py-1 text-sm border border-gray-200 dark:border-gray-700 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
               >
                 Clear
               </button>
             </div>
-            <p className="text-sm text-gray-600 mb-4">
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
               Select cards you're looking to acquire.
             </p>
             <CardSelectorWithQuantity
@@ -663,9 +663,9 @@ export default function ProfilePage() {
         )}
 
         {profile && (
-          <div className="mt-6 bg-red-50 border border-red-200 rounded-lg p-4">
-            <h3 className="text-sm font-semibold text-red-900 mb-2">Danger Zone</h3>
-            <p className="text-xs text-red-700 mb-3">
+          <div className="mt-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+            <h3 className="text-sm font-semibold text-red-900 dark:text-red-200 mb-2">Danger Zone</h3>
+            <p className="text-xs text-red-700 dark:text-red-300 mb-3">
               Deleting your account will permanently remove your profile, cards, and all associated data. This action cannot be undone.
             </p>
             <button
@@ -780,9 +780,9 @@ function CardSelectorWithQuantity({
           placeholder="Search cards..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="flex-1 px-3 py-2 border rounded-md"
+          className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
         />
-        <label className="flex items-center gap-2 px-3 py-2 border rounded-md cursor-pointer hover:bg-gray-50">
+        <label className="flex items-center gap-2 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-md cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
           <input
             type="checkbox"
             checked={showOnlySelected}
@@ -793,7 +793,7 @@ function CardSelectorWithQuantity({
         </label>
       </div>
       
-      <div className="max-h-96 overflow-y-auto border rounded-md p-2">
+      <div className="max-h-96 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-md p-2 bg-white dark:bg-gray-800">
         {filteredCards.map((card) => {
           const isSelected = selectedMap.has(card.id);
           const quantity = selectedMap.get(card.id) || 1;
@@ -801,7 +801,7 @@ function CardSelectorWithQuantity({
           return (
             <div
               key={card.id}
-              className={`flex items-center gap-2 p-2 hover:bg-gray-50 ${isSelected ? 'bg-blue-50' : ''}`}
+              className={`flex items-center gap-2 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 ${isSelected ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
             >
               <input
                 type="checkbox"
@@ -818,7 +818,7 @@ function CardSelectorWithQuantity({
               <span className="text-sm flex-1">{getCardDisplayName(card)}</span>
               {isSelected && (
                 <div className="flex items-center gap-2">
-                  <label className="text-xs text-gray-600">Qty:</label>
+                  <label className="text-xs text-gray-600 dark:text-gray-400">Qty:</label>
                   <input
                     type="number"
                     min="1"
@@ -828,7 +828,7 @@ function CardSelectorWithQuantity({
                       updateCardSelection(card.id, newQty);
                     }}
                     onClick={(e) => e.stopPropagation()}
-                    className="w-16 px-2 py-1 border rounded text-sm"
+                    className="w-16 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   />
                 </div>
               )}
@@ -838,11 +838,11 @@ function CardSelectorWithQuantity({
       </div>
       
       <div className="flex justify-between items-center mt-2">
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-gray-500 dark:text-gray-400">
           {selectedMap.size} card(s) selected
         </p>
         {isSaving && (
-          <p className="text-xs text-blue-500">Saving...</p>
+          <p className="text-xs text-blue-500 dark:text-blue-400">Saving...</p>
         )}
       </div>
     </div>
