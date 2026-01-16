@@ -53,6 +53,29 @@ Thank you for your interest in contributing to RifTrade! This document provides 
 
 ## Current Priority Tasks
 
+### Email Notifications for New Matches
+**Status:** High Priority
+
+**Problem:** Users currently have no way to be notified when someone else's card changes create a new match with their profile. This requires implementing an email notification system.
+
+**Requirements:**
+- Add a checkbox in the profile page to enable/disable email notifications
+- Store the preference in the database (add field to `profiles` table)
+- When a match is detected, only the **passive user** (the one being matched, not the one making changes) should receive an email notification
+- Only send emails if the passive user has email notifications enabled
+- The active user (the one changing their cards) should NOT receive an email
+
+**Technical Considerations:**
+- No free unlimited email service is easily available, so research email service options (SendGrid, Mailgun, Resend, etc.)
+- Consider using Supabase Edge Functions or Next.js API routes for sending emails
+- Match detection logic is in `lib/match-storage.ts` - `detectAndStoreMatches` function
+- Need to identify which user is "active" (making changes) vs "passive" (being matched)
+
+**Resources:**
+- Match storage logic: `lib/match-storage.ts`
+- Profile page: `app/profile/page.tsx`
+- Database schema: `supabase/migrations/`
+
 ### Support Multiple Tabs
 **Status:** High Priority
 

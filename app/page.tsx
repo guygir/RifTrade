@@ -74,6 +74,7 @@ export default function Home() {
           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4 mb-4">
             <h3 className="font-semibold text-blue-900 dark:text-blue-200 mb-2">Current Priority Tasks</h3>
             <ul className="list-disc list-inside space-y-2 text-sm text-blue-800 dark:text-blue-300 ml-2">
+              <li><strong>Email Notifications for New Matches:</strong> Implement email notifications so users can be notified when someone else's card changes create a new match. Only the passive user (the one being matched, not the one making changes) should receive emails, and only if they have notifications enabled in their profile settings.</li>
               <li><strong>Support Multiple Tabs:</strong> Fix Supabase auth conflicts when users have multiple tabs open. Currently, multiple tabs can cause AbortErrors and prevent data from loading.</li>
             </ul>
           </div>
