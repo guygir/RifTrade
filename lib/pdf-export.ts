@@ -20,10 +20,19 @@ export type CardForExport = {
 type SortOrder = 'default';
 
 /**
- * Load image and convert to base64
+ * Load image and convert to base64 with optimized size
  * Uses API proxy to bypass CORS restrictions
+ * @param url - Image URL
+ * @param maxWidth - Maximum width in pixels (default: 400)
+ * @param maxHeight - Maximum height in pixels (default: 560)
+ * @param quality - JPEG quality 0-1 (default: 0.75)
  */
-async function loadImageAsBase64(url: string): Promise<string> {
+async function loadImageAsBase64(
+  url: string,
+  maxWidth: number = 400,
+  maxHeight: number = 560,
+  quality: number = 0.75
+): Promise<string> {
   return new Promise((resolve, reject) => {
     // Use our API proxy to bypass CORS
     const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(url)}`;
@@ -33,16 +42,46 @@ async function loadImageAsBase64(url: string): Promise<string> {
     
     img.onload = () => {
       try {
+        // Calculate optimal dimensions while maintaining aspect ratio
+        let width = img.naturalWidth || img.width;
+        let height = img.naturalHeight || img.height;
+        const aspectRatio = width / height;
+        
+        // Resize if image is larger than max dimensions
+        if (width > maxWidth || height > maxHeight) {
+          if (width > height) {
+            width = Math.min(width, maxWidth);
+            height = width / aspectRatio;
+            if (height > maxHeight) {
+              height = maxHeight;
+              width = height * aspectRatio;
+            }
+          } else {
+            height = Math.min(height, maxHeight);
+            width = height * aspectRatio;
+            if (width > maxWidth) {
+              width = maxWidth;
+              height = width / aspectRatio;
+            }
+          }
+        }
+        
         const canvas = document.createElement('canvas');
-        canvas.width = img.naturalWidth || img.width;
-        canvas.height = img.naturalHeight || img.height;
+        canvas.width = Math.round(width);
+        canvas.height = Math.round(height);
         const ctx = canvas.getContext('2d');
         if (!ctx) {
           reject(new Error('Could not get canvas context'));
           return;
         }
-        ctx.drawImage(img, 0, 0);
-        const base64 = canvas.toDataURL('image/jpeg', 0.9);
+        
+        // Use better image rendering
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        
+        // Use lower quality for smaller file size
+        const base64 = canvas.toDataURL('image/jpeg', quality);
         resolve(base64);
       } catch (error) {
         console.error('Error converting image to base64:', error);
@@ -57,13 +96,38 @@ async function loadImageAsBase64(url: string): Promise<string> {
       fallbackImg.crossOrigin = 'anonymous';
       fallbackImg.onload = () => {
         try {
+          // Same optimization logic
+          let width = fallbackImg.naturalWidth || fallbackImg.width;
+          let height = fallbackImg.naturalHeight || fallbackImg.height;
+          const aspectRatio = width / height;
+          
+          if (width > maxWidth || height > maxHeight) {
+            if (width > height) {
+              width = Math.min(width, maxWidth);
+              height = width / aspectRatio;
+              if (height > maxHeight) {
+                height = maxHeight;
+                width = height * aspectRatio;
+              }
+            } else {
+              height = Math.min(height, maxHeight);
+              width = height * aspectRatio;
+              if (width > maxWidth) {
+                width = maxWidth;
+                height = width / aspectRatio;
+              }
+            }
+          }
+          
           const canvas = document.createElement('canvas');
-          canvas.width = fallbackImg.naturalWidth || fallbackImg.width;
-          canvas.height = fallbackImg.naturalHeight || fallbackImg.height;
+          canvas.width = Math.round(width);
+          canvas.height = Math.round(height);
           const ctx = canvas.getContext('2d');
           if (ctx) {
-            ctx.drawImage(fallbackImg, 0, 0);
-            const base64 = canvas.toDataURL('image/jpeg', 0.9);
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(fallbackImg, 0, 0, canvas.width, canvas.height);
+            const base64 = canvas.toDataURL('image/jpeg', quality);
             resolve(base64);
           } else {
             reject(new Error('Could not get canvas context'));
@@ -83,7 +147,7 @@ async function loadImageAsBase64(url: string): Promise<string> {
 /**
  * Rotate image on canvas by 90 degrees
  */
-function rotateImage90Degrees(imageData: string): Promise<string> {
+function rotateImage90Degrees(imageData: string, quality: number = 0.75): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
@@ -98,6 +162,9 @@ function rotateImage90Degrees(imageData: string): Promise<string> {
           return;
         }
         
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        
         // Translate to center of rotation
         ctx.translate(canvas.width / 2, canvas.height / 2);
         // Rotate 90 degrees clockwise
@@ -105,7 +172,7 @@ function rotateImage90Degrees(imageData: string): Promise<string> {
         // Draw image (adjust position since we rotated around center)
         ctx.drawImage(img, -img.width / 2, -img.height / 2);
         
-        const rotatedBase64 = canvas.toDataURL('image/jpeg', 0.9);
+        const rotatedBase64 = canvas.toDataURL('image/jpeg', quality);
         resolve(rotatedBase64);
       } catch (error) {
         console.error('Error rotating image:', error);
@@ -130,7 +197,13 @@ async function addCardToPDF(
 ): Promise<void> {
   if (card.image_url) {
     try {
-      let imageData = await loadImageAsBase64(card.image_url);
+      // Calculate optimal image dimensions in pixels (35mm = ~132px at 96 DPI, but we'll use higher for quality)
+      // PDF card width is 35mm, which is about 132 pixels at 96 DPI, but we'll use 300 DPI for better quality
+      // 35mm at 300 DPI = ~413 pixels, but we'll cap at 400 for optimization
+      const maxWidthPx = 400;
+      const maxHeightPx = Math.round(maxWidthPx * (height / width)); // Maintain aspect ratio
+      
+      let imageData = await loadImageAsBase64(card.image_url, maxWidthPx, maxHeightPx, 0.75);
       
       // Check if card is a Battlefield type and needs rotation
       const cardType = card.metadata?.classification?.type || card.metadata?.type;
@@ -138,10 +211,10 @@ async function addCardToPDF(
       
       if (isBattlefield) {
         // Rotate the image 90 degrees
-        imageData = await rotateImage90Degrees(imageData);
+        imageData = await rotateImage90Degrees(imageData, 0.75);
       }
       
-      doc.addImage(imageData, 'JPEG', x, y, width, height);
+      doc.addImage(imageData, 'JPEG', x, y, width, height, undefined, 'FAST');
       
       // Check if card is foil (has "(foil)" in name)
       const isFoil = card.name.toLowerCase().includes('(foil)');
