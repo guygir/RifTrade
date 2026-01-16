@@ -143,6 +143,9 @@ async function addCardToPDF(
       
       doc.addImage(imageData, 'JPEG', x, y, width, height);
       
+      // Check if card is foil (has "(foil)" in name)
+      const isFoil = card.name.toLowerCase().includes('(foil)');
+      
       // Add quantity badge if quantity > 1
       if (card.quantity && card.quantity > 1) {
         doc.setFillColor(37, 99, 235); // Blue
@@ -150,6 +153,27 @@ async function addCardToPDF(
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(8);
         doc.text(card.quantity.toString(), x + width - 5, y + 6.5, {
+          align: 'center',
+        });
+        doc.setTextColor(0, 0, 0);
+      }
+      
+      // Add FOIL badge if card is foil
+      if (isFoil) {
+        doc.setFillColor(37, 99, 235); // Blue (same as quantity badge)
+        const foilBadgeWidth = 12;
+        const foilBadgeHeight = 5;
+        const foilBadgeX = x + 2;
+        const foilBadgeY = y + 2;
+        // Draw rounded rectangle (if method exists) or regular rectangle
+        if (typeof (doc as any).roundedRect === 'function') {
+          (doc as any).roundedRect(foilBadgeX, foilBadgeY, foilBadgeWidth, foilBadgeHeight, 1, 1, 'F');
+        } else {
+          doc.rect(foilBadgeX, foilBadgeY, foilBadgeWidth, foilBadgeHeight, 'F');
+        }
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(7);
+        doc.text('FOIL', foilBadgeX + foilBadgeWidth / 2, foilBadgeY + 3.5, {
           align: 'center',
         });
         doc.setTextColor(0, 0, 0);
