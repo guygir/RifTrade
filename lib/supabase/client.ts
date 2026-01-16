@@ -1,4 +1,3 @@
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 // Singleton instance for client-side Supabase client
@@ -18,8 +17,14 @@ export function createSupabaseClient() {
     throw new Error('Missing Supabase environment variables');
   }
 
-  // Create and cache the client instance
-  supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+  // Create and cache the client instance with auth persistence
+  supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    },
+  });
   return supabaseClient;
 }
 

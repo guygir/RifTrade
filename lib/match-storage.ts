@@ -22,6 +22,10 @@ export async function detectAndStoreMatches(userProfileId: string): Promise<numb
   console.log(`Found ${existingMatches?.length || 0} existing matches in database`);
 
   if (fetchError) {
+    // Ignore AbortError - it's expected when component unmounts or React Strict Mode double-renders
+    if (fetchError.message?.includes('AbortError') || fetchError.name === 'AbortError') {
+      return 0;
+    }
     console.error('Error fetching existing matches:', fetchError);
     return 0;
   }

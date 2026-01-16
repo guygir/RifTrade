@@ -235,8 +235,8 @@ export default function UserProfilePage() {
       <main className="min-h-screen p-8">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-3xl font-bold mb-4">Profile Not Found</h1>
-          <p className="text-gray-600 mb-4">The user profile you're looking for doesn't exist.</p>
-          <Link href="/" className="text-blue-600 hover:underline">
+          <p className="text-gray-600 dark:text-gray-400 mb-4">The user profile you're looking for doesn't exist.</p>
+          <Link href="/" className="text-blue-600 dark:text-blue-400 hover:underline">
             ← Back to home
           </Link>
         </div>
@@ -261,23 +261,23 @@ export default function UserProfilePage() {
       <div className="max-w-4xl mx-auto">
         <div className="mb-6 flex justify-between items-center">
           <h1 className="text-3xl font-bold">{sanitizeText(profile.display_name)}'s Profile</h1>
-          <Link href="/" className="px-4 py-2 border rounded-md hover:bg-gray-50">
+          <Link href="/" className="px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800">
             Home
           </Link>
         </div>
 
-        <div className="bg-white border rounded-lg p-6 mb-6">
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4">Profile Information</h2>
           
           <div className="space-y-3">
             <div>
-              <strong className="text-sm text-gray-600">Contact:</strong>
+              <strong className="text-sm text-gray-600 dark:text-gray-400">Contact:</strong>
               <p className="mt-1" dangerouslySetInnerHTML={{ __html: sanitizeContactInfo(profile.contact_info) }} />
             </div>
             
             {profile.trading_locations && (
               <div>
-                <strong className="text-sm text-gray-600">Trading Locations:</strong>
+                <strong className="text-sm text-gray-600 dark:text-gray-400">Trading Locations:</strong>
                 <p className="mt-1">{sanitizeText(profile.trading_locations)}</p>
               </div>
             )}
@@ -285,12 +285,12 @@ export default function UserProfilePage() {
         </div>
 
         {!isOwnProfile && matchScore > 0 && matchedCards.length > 0 && (
-          <div className="bg-white border rounded-lg p-6 mb-6">
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6">
             <h2 className="text-xl font-semibold mb-4">
               Matches: {matchScore} matching card{matchScore !== 1 ? 's' : ''}
             </h2>
-            <div className="p-3 bg-blue-50 rounded">
-              <ul className="text-sm text-blue-800 list-disc list-inside space-y-1">
+            <div className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded">
+              <ul className="text-sm text-blue-800 dark:text-blue-300 list-disc list-inside space-y-1">
                 {matchedCards.map((match, idx) => {
                   // Determine match direction based on which cards are involved
                   // If the card is in their have list, you want it and they have it
@@ -321,21 +321,21 @@ export default function UserProfilePage() {
           </div>
         )}
 
-        <div className="bg-white border rounded-lg p-6 mb-6">
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4">Cards I Have ({haveCards.length})</h2>
           {haveCards.length > 0 ? (
             <CardImageGrid cards={haveCards} />
           ) : (
-            <p className="text-gray-600">No cards listed.</p>
+            <p className="text-gray-600 dark:text-gray-400">No cards listed.</p>
           )}
         </div>
 
-        <div className="bg-white border rounded-lg p-6">
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
           <h2 className="text-xl font-semibold mb-4">Cards I Want ({wantCards.length})</h2>
           {wantCards.length > 0 ? (
             <CardImageGrid cards={wantCards} />
           ) : (
-            <p className="text-gray-600">No cards listed.</p>
+            <p className="text-gray-600 dark:text-gray-400">No cards listed.</p>
           )}
         </div>
       </div>
@@ -358,12 +358,12 @@ function CardImage({ card }: { card: Card & { quantity: number } }) {
   const [imageLoading, setImageLoading] = useState(true);
 
   return (
-    <div className="relative border rounded-lg overflow-hidden hover:shadow-lg transition-shadow group">
+    <div className="relative border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:shadow-lg dark:hover:shadow-gray-900 transition-shadow group bg-white dark:bg-gray-800">
       {card.image_url && !imageError ? (
         <>
           {imageLoading && (
-            <div className="w-full aspect-[63/88] bg-gray-200 animate-pulse flex items-center justify-center">
-              <div className="text-xs text-gray-400">Loading...</div>
+            <div className="w-full aspect-[63/88] bg-gray-200 dark:bg-gray-700 animate-pulse flex items-center justify-center">
+              <div className="text-xs text-gray-400 dark:text-gray-500">Loading...</div>
             </div>
           )}
           <img
@@ -379,7 +379,7 @@ function CardImage({ card }: { card: Card & { quantity: number } }) {
           />
         </>
       ) : (
-        <div className="w-full aspect-[63/88] bg-gray-200 flex items-center justify-center text-xs text-gray-500 p-2 text-center">
+        <div className="w-full aspect-[63/88] bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs text-gray-500 dark:text-gray-400 p-2 text-center">
           {card.name}
         </div>
       )}

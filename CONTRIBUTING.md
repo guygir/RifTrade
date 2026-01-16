@@ -51,6 +51,24 @@ Thank you for your interest in contributing to RifTrade! This document provides 
 - Documentation updates
 - Feature additions that align with the project's goals
 
+## Current Priority Tasks
+
+### Support Multiple Tabs
+**Status:** High Priority
+
+**Problem:** When users have multiple tabs of the app open, Supabase auth initialization can cause conflicts, leading to AbortErrors and preventing data from loading. This is due to Web Lock conflicts when multiple tabs try to initialize Supabase simultaneously.
+
+**What's Needed:**
+- Investigate Supabase's Web Lock mechanism and multi-tab handling
+- Implement a solution that allows multiple tabs to work simultaneously without conflicts
+- Ensure auth state syncs properly across tabs
+- Test thoroughly with multiple tabs open
+
+**Resources:**
+- Supabase client configuration in `lib/supabase/client.ts`
+- Error handling in `app/cards/page.tsx` and `app/profile/page.tsx`
+- Related GitHub issues: [supabase/supabase-js#1594](https://github.com/supabase/supabase-js/issues/1594)
+
 ## Project Structure
 
 - `app/` - Next.js pages and routes
