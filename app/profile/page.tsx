@@ -8,13 +8,29 @@ import { Card, Profile, ProfileHaveCard, ProfileWantCard } from '@/lib/supabase/
 import { getCardDisplayName } from '@/lib/card-display';
 import { detectAndStoreMatches } from '@/lib/match-storage';
 import { sanitizeDisplayName, sanitizeContactInfo, sanitizeTradingLocations, sanitizeUsername } from '@/lib/sanitize-input';
-import { generateCardListPDF, generateCardListTextFile, CardForExport } from '@/lib/pdf-export';
+import { generateCardListPDF, generateCardListPNG, generateCardListTextFile, CardForExport } from '@/lib/pdf-export';
+
+const TAG_OPTIONS = [
+  { value: null, label: 'None', emoji: '' },
+  { value: '❗', label: 'Important', emoji: '❗' },
+  { value: '❓', label: 'Question', emoji: '❓' },
+  { value: '⏰', label: 'Urgent', emoji: '⏰' },
+  { value: '💰', label: 'Price', emoji: '💰' },
+];
+
+const TAG_FILTER_OPTIONS = [
+  { value: 'all', label: 'All tags' },
+  { value: 'no-tag', label: 'No Tag' },
+  ...TAG_OPTIONS.filter(opt => opt.value !== null).map(opt => ({ value: opt.value, label: `${opt.emoji} ${opt.label}` })),
+];
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [haveCards, setHaveCards] = useState<Array<Card & { quantity: number; relationId: string }>>([]);
-  const [wantCards, setWantCards] = useState<Array<Card & { quantity: number; relationId: string }>>([]);
+  const [haveCards, setHaveCards] = useState<Array<Card & { quantity: number; tag: string | null; relationId: string }>>([]);
+  const [wantCards, setWantCards] = useState<Array<Card & { quantity: number; tag: string | null; relationId: string }>>([]);
   const [allCards, setAllCards] = useState<Card[]>([]);
+  const [selectedHaveTag, setSelectedHaveTag] = useState<string>('all');
+  const [selectedWantTag, setSelectedWantTag] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [displayName, setDisplayName] = useState('');
@@ -25,9 +41,12 @@ export default function ProfilePage() {
   const [checkingUsername, setCheckingUsername] = useState(false);
   const [exportingHavePDF, setExportingHavePDF] = useState(false);
   const [exportingWantPDF, setExportingWantPDF] = useState(false);
+  const [exportingHavePNG, setExportingHavePNG] = useState(false);
+  const [exportingWantPNG, setExportingWantPNG] = useState(false);
   const [downloadingHaveList, setDownloadingHaveList] = useState(false);
   const [downloadingWantList, setDownloadingWantList] = useState(false);
   const [pdfProgress, setPdfProgress] = useState(0);
+  const [pngProgress, setPngProgress] = useState(0);
   const router = useRouter();
 
   useEffect(() => {
@@ -93,16 +112,32 @@ export default function ProfilePage() {
       setUsername(profileData.username || '');
 
       // Load have cards with quantities, sorted by set_code then sort_key
-      const { data: haveData } = await supabase
+      // Try to select tag, but if column doesn't exist yet, fall back to without tag
+      let haveData;
+      let haveQuery = supabase
         .from('profile_have_cards')
-        .select('id, quantity, cards(*)')
+        .select('id, quantity, tag, cards(*)')
         .eq('profile_id', profileData.id);
+      
+      const { data: haveDataWithTag, error: haveTagError } = await haveQuery;
+      
+      if (haveTagError && haveTagError.message?.includes('tag')) {
+        // Tag column doesn't exist yet - query without it
+        const { data } = await supabase
+          .from('profile_have_cards')
+          .select('id, quantity, cards(*)')
+          .eq('profile_id', profileData.id);
+        haveData = data;
+      } else {
+        haveData = haveDataWithTag;
+      }
 
       if (haveData) {
         const cardsWithQuantity = haveData
           .map((item: any) => ({
             ...item.cards,
             quantity: item.quantity || 1,
+            tag: item.tag || null, // Will be null if column doesn't exist
             relationId: item.id,
           }))
           .filter((item: any) => item.id) // Filter out null cards
@@ -121,16 +156,32 @@ export default function ProfilePage() {
       }
 
       // Load want cards with quantities, sorted by set_code then sort_key
-      const { data: wantData } = await supabase
+      // Try to select tag, but if column doesn't exist yet, fall back to without tag
+      let wantData;
+      let wantQuery = supabase
         .from('profile_want_cards')
-        .select('id, quantity, cards(*)')
+        .select('id, quantity, tag, cards(*)')
         .eq('profile_id', profileData.id);
+      
+      const { data: wantDataWithTag, error: wantTagError } = await wantQuery;
+      
+      if (wantTagError && wantTagError.message?.includes('tag')) {
+        // Tag column doesn't exist yet - query without it
+        const { data } = await supabase
+          .from('profile_want_cards')
+          .select('id, quantity, cards(*)')
+          .eq('profile_id', profileData.id);
+        wantData = data;
+      } else {
+        wantData = wantDataWithTag;
+      }
 
       if (wantData) {
         const cardsWithQuantity = wantData
           .map((item: any) => ({
             ...item.cards,
             quantity: item.quantity || 1,
+            tag: item.tag || null, // Will be null if column doesn't exist
             relationId: item.id,
           }))
           .filter((item: any) => item.id) // Filter out null cards
@@ -504,20 +555,43 @@ export default function ProfilePage() {
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold">Cards I Have ({haveCards.length})</h2>
                 <div className="flex gap-2 items-center">
+                  <label className="text-sm text-gray-600 dark:text-gray-400">Filter by tag:</label>
+                  <select
+                    value={selectedHaveTag}
+                    onChange={(e) => setSelectedHaveTag(e.target.value)}
+                    className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  >
+                    {TAG_FILTER_OPTIONS.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="flex gap-2 items-center mb-4">
+                <div className="flex gap-2 items-center">
                   <button
                     onClick={async () => {
-                      if (haveCards.length === 0) {
+                      const filteredCards = selectedHaveTag === 'all' 
+                        ? haveCards 
+                        : selectedHaveTag === 'no-tag'
+                        ? haveCards.filter(card => !card.tag || card.tag === null)
+                        : haveCards.filter(card => card.tag === selectedHaveTag);
+                      
+                      if (filteredCards.length === 0) {
                         alert('No cards to download');
                         return;
                       }
                       setDownloadingHaveList(true);
                       try {
-                        const cardsForExport: CardForExport[] = haveCards.map(card => ({
+                        const cardsForExport: CardForExport[] = filteredCards.map(card => ({
                           id: card.id,
                           name: card.name,
                           image_url: card.image_url,
                           rarity: card.rarity,
                           quantity: card.quantity,
+                          tag: card.tag,
                           public_code: card.public_code,
                           set_code: card.set_code,
                           collector_number: card.collector_number,
@@ -538,18 +612,25 @@ export default function ProfilePage() {
                   </button>
                   <button
                     onClick={async () => {
-                      if (haveCards.length === 0) {
+                      const filteredCards = selectedHaveTag === 'all' 
+                        ? haveCards 
+                        : selectedHaveTag === 'no-tag'
+                        ? haveCards.filter(card => !card.tag || card.tag === null)
+                        : haveCards.filter(card => card.tag === selectedHaveTag);
+                      
+                      if (filteredCards.length === 0) {
                         alert('No cards to export');
                         return;
                       }
                       setExportingHavePDF(true);
                       try {
-                        const cardsForExport: CardForExport[] = haveCards.map(card => ({
+                        const cardsForExport: CardForExport[] = filteredCards.map(card => ({
                           id: card.id,
                           name: card.name,
                           image_url: card.image_url,
                           rarity: card.rarity,
                           quantity: card.quantity,
+                          tag: card.tag,
                           public_code: card.public_code,
                           set_code: card.set_code,
                           collector_number: card.collector_number,
@@ -558,7 +639,7 @@ export default function ProfilePage() {
                         setPdfProgress(0);
                         await generateCardListPDF(cardsForExport, 'Cards I Have', (progress) => {
                           setPdfProgress(progress);
-                        });
+                        }, selectedHaveTag === 'all' || selectedHaveTag === 'no-tag' ? null : selectedHaveTag);
                       } catch (error) {
                         console.error('Error generating PDF:', error);
                         alert('Error generating PDF. Please try again.');
@@ -571,6 +652,49 @@ export default function ProfilePage() {
                     className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
                   >
                     {exportingHavePDF ? `Generating... ${pdfProgress}%` : 'Export PDF'}
+                  </button>
+                  <button
+                    onClick={async () => {
+                      const filteredCards = selectedHaveTag === 'all' 
+                        ? haveCards 
+                        : selectedHaveTag === 'no-tag'
+                        ? haveCards.filter(card => !card.tag || card.tag === null)
+                        : haveCards.filter(card => card.tag === selectedHaveTag);
+                      
+                      if (filteredCards.length === 0) {
+                        alert('No cards to export');
+                        return;
+                      }
+                      setExportingHavePNG(true);
+                      try {
+                        const cardsForExport: CardForExport[] = filteredCards.map(card => ({
+                          id: card.id,
+                          name: card.name,
+                          image_url: card.image_url,
+                          rarity: card.rarity,
+                          quantity: card.quantity,
+                          tag: card.tag,
+                          public_code: card.public_code,
+                          set_code: card.set_code,
+                          collector_number: card.collector_number,
+                          metadata: card.metadata,
+                        }));
+                        setPngProgress(0);
+                        await generateCardListPNG(cardsForExport, 'Cards I Have', (progress) => {
+                          setPngProgress(progress);
+                        }, selectedHaveTag === 'all' || selectedHaveTag === 'no-tag' ? null : selectedHaveTag);
+                      } catch (error) {
+                        console.error('Error generating PNG:', error);
+                        alert('Error generating PNG. Please try again.');
+                      } finally {
+                        setExportingHavePNG(false);
+                        setPngProgress(0);
+                      }
+                    }}
+                    disabled={exportingHavePNG || haveCards.length === 0}
+                    className="px-3 py-1 text-sm bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50"
+                  >
+                    {exportingHavePNG ? `Generating... ${pngProgress}%` : 'Export PNG'}
                   </button>
                   <button
                     onClick={async () => {
@@ -594,14 +718,14 @@ export default function ProfilePage() {
               <CardSelectorWithQuantity
                 allCards={allCards}
                 selectedCards={haveCards}
-                onSelectionChange={async (cardSelections: Array<{ cardId: string; quantity: number }>) => {
+                onSelectionChange={async (cardSelections: Array<{ cardId: string; quantity: number; tag: string | null }>) => {
                   const supabase = createSupabaseClient();
                   
                   // Optimistically update local state immediately (no DB refresh)
-                  const updatedCards = cardSelections.map(({ cardId, quantity }) => {
+                  const updatedCards = cardSelections.map(({ cardId, quantity, tag }) => {
                     const card = allCards.find(c => c.id === cardId);
-                    return card ? { ...card, quantity: quantity || 1, relationId: cardId } : null;
-                  }).filter(Boolean) as Array<Card & { quantity: number; relationId: string }>;
+                    return card ? { ...card, quantity: quantity || 1, tag: tag || null, relationId: cardId } : null;
+                  }).filter(Boolean) as Array<Card & { quantity: number; tag: string | null; relationId: string }>;
                   
                   // Sort updated cards
                   updatedCards.sort((a: any, b: any) => {
@@ -636,10 +760,11 @@ export default function ProfilePage() {
                       if (cardSelections.length > 0) {
                         const { error: insertError } = await supabase
                           .from('profile_have_cards')
-                          .insert(cardSelections.map(({ cardId, quantity }) => ({
+                          .insert(cardSelections.map(({ cardId, quantity, tag }) => ({
                             profile_id: profile.id,
                             card_id: cardId,
                             quantity: quantity || 1,
+                            tag: tag || null,
                           })));
                         
                         if (insertError) {
@@ -666,20 +791,43 @@ export default function ProfilePage() {
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold">Cards I Want ({wantCards.length})</h2>
               <div className="flex gap-2 items-center">
+                <label className="text-sm text-gray-600 dark:text-gray-400">Filter by tag:</label>
+                <select
+                  value={selectedWantTag}
+                  onChange={(e) => setSelectedWantTag(e.target.value)}
+                  className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                >
+                  {TAG_FILTER_OPTIONS.map(option => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="flex gap-2 items-center mb-4">
+              <div className="flex gap-2 items-center">
                 <button
                   onClick={async () => {
-                    if (wantCards.length === 0) {
+                    const filteredCards = selectedWantTag === 'all' 
+                      ? wantCards 
+                      : selectedWantTag === 'no-tag'
+                      ? wantCards.filter(card => !card.tag || card.tag === null)
+                      : wantCards.filter(card => card.tag === selectedWantTag);
+                    
+                    if (filteredCards.length === 0) {
                       alert('No cards to download');
                       return;
                     }
                     setDownloadingWantList(true);
                     try {
-                      const cardsForExport: CardForExport[] = wantCards.map(card => ({
+                      const cardsForExport: CardForExport[] = filteredCards.map(card => ({
                         id: card.id,
                         name: card.name,
                         image_url: card.image_url,
                         rarity: card.rarity,
                         quantity: card.quantity,
+                        tag: card.tag,
                         public_code: card.public_code,
                         set_code: card.set_code,
                         collector_number: card.collector_number,
@@ -700,18 +848,25 @@ export default function ProfilePage() {
                 </button>
                 <button
                   onClick={async () => {
-                    if (wantCards.length === 0) {
+                    const filteredCards = selectedWantTag === 'all' 
+                      ? wantCards 
+                      : selectedWantTag === 'no-tag'
+                      ? wantCards.filter(card => !card.tag || card.tag === null)
+                      : wantCards.filter(card => card.tag === selectedWantTag);
+                    
+                    if (filteredCards.length === 0) {
                       alert('No cards to export');
                       return;
                     }
                     setExportingWantPDF(true);
                     try {
-                      const cardsForExport: CardForExport[] = wantCards.map(card => ({
+                      const cardsForExport: CardForExport[] = filteredCards.map(card => ({
                         id: card.id,
                         name: card.name,
                         image_url: card.image_url,
                         rarity: card.rarity,
                         quantity: card.quantity,
+                        tag: card.tag,
                         public_code: card.public_code,
                         set_code: card.set_code,
                         collector_number: card.collector_number,
@@ -720,7 +875,7 @@ export default function ProfilePage() {
                       setPdfProgress(0);
                       await generateCardListPDF(cardsForExport, 'Cards I Want', (progress) => {
                         setPdfProgress(progress);
-                      });
+                      }, selectedWantTag === 'all' || selectedWantTag === 'no-tag' ? null : selectedWantTag);
                     } catch (error) {
                       console.error('Error generating PDF:', error);
                       alert('Error generating PDF. Please try again.');
@@ -733,6 +888,49 @@ export default function ProfilePage() {
                   className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
                 >
                   {exportingWantPDF ? `Generating... ${pdfProgress}%` : 'Export PDF'}
+                </button>
+                <button
+                  onClick={async () => {
+                    const filteredCards = selectedWantTag === 'all' 
+                      ? wantCards 
+                      : selectedWantTag === 'no-tag'
+                      ? wantCards.filter(card => !card.tag || card.tag === null)
+                      : wantCards.filter(card => card.tag === selectedWantTag);
+                    
+                    if (filteredCards.length === 0) {
+                      alert('No cards to export');
+                      return;
+                    }
+                    setExportingWantPNG(true);
+                    try {
+                      const cardsForExport: CardForExport[] = filteredCards.map(card => ({
+                        id: card.id,
+                        name: card.name,
+                        image_url: card.image_url,
+                        rarity: card.rarity,
+                        quantity: card.quantity,
+                        tag: card.tag,
+                        public_code: card.public_code,
+                        set_code: card.set_code,
+                        collector_number: card.collector_number,
+                        metadata: card.metadata,
+                      }));
+                      setPngProgress(0);
+                      await generateCardListPNG(cardsForExport, 'Cards I Want', (progress) => {
+                        setPngProgress(progress);
+                      }, selectedWantTag === 'all' || selectedWantTag === 'no-tag' ? null : selectedWantTag);
+                    } catch (error) {
+                      console.error('Error generating PNG:', error);
+                      alert('Error generating PNG. Please try again.');
+                    } finally {
+                      setExportingWantPNG(false);
+                      setPngProgress(0);
+                    }
+                  }}
+                  disabled={exportingWantPNG || wantCards.length === 0}
+                  className="px-3 py-1 text-sm bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50"
+                >
+                  {exportingWantPNG ? `Generating... ${pngProgress}%` : 'Export PNG'}
                 </button>
                 <button
                   onClick={async () => {
@@ -756,14 +954,14 @@ export default function ProfilePage() {
             <CardSelectorWithQuantity
               allCards={allCards}
               selectedCards={wantCards}
-              onSelectionChange={async (cardSelections: Array<{ cardId: string; quantity: number }>) => {
+              onSelectionChange={async (cardSelections: Array<{ cardId: string; quantity: number; tag: string | null }>) => {
                 const supabase = createSupabaseClient();
                 
                 // Optimistically update local state immediately (no DB refresh)
-                const updatedCards = cardSelections.map(({ cardId, quantity }) => {
+                const updatedCards = cardSelections.map(({ cardId, quantity, tag }) => {
                   const card = allCards.find(c => c.id === cardId);
-                  return card ? { ...card, quantity: quantity || 1, relationId: cardId } : null;
-                }).filter(Boolean) as Array<Card & { quantity: number; relationId: string }>;
+                  return card ? { ...card, quantity: quantity || 1, tag: tag || null, relationId: cardId } : null;
+                }).filter(Boolean) as Array<Card & { quantity: number; tag: string | null; relationId: string }>;
                 
                 // Sort updated cards
                 updatedCards.sort((a: any, b: any) => {
@@ -875,19 +1073,19 @@ function CardSelectorWithQuantity({
   onSelectionChange,
 }: {
   allCards: Card[];
-  selectedCards: Array<Card & { quantity: number; relationId?: string }>;
-  onSelectionChange: (selections: Array<{ cardId: string; quantity: number }>) => void;
+  selectedCards: Array<Card & { quantity: number; tag: string | null; relationId?: string }>;
+  onSelectionChange: (selections: Array<{ cardId: string; quantity: number; tag: string | null }>) => void;
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [showOnlySelected, setShowOnlySelected] = useState(false);
-  const [localSelections, setLocalSelections] = useState<Map<string, number>>(new Map());
+  const [localSelections, setLocalSelections] = useState<Map<string, { quantity: number; tag: string | null }>>(new Map());
   const [isSaving, setIsSaving] = useState(false);
   
   // Initialize local selections from props
   useEffect(() => {
-    const map = new Map<string, number>();
+    const map = new Map<string, { quantity: number; tag: string | null }>();
     selectedCards.forEach(card => {
-      map.set(card.id, card.quantity || 1);
+      map.set(card.id, { quantity: card.quantity || 1, tag: card.tag || null });
     });
     setLocalSelections(map);
   }, [selectedCards]);
@@ -908,11 +1106,14 @@ function CardSelectorWithQuantity({
   // Debounced save function
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
-  const updateCardSelection = (cardId: string, quantity: number) => {
+  const updateCardSelection = (cardId: string, quantity: number, tag: string | null | undefined = undefined) => {
     // Optimistic UI update - update local state immediately
     const newSelections = new Map(selectedMap);
     if (quantity > 0) {
-      newSelections.set(cardId, quantity);
+      const existing = newSelections.get(cardId);
+      // If tag is explicitly provided (including null), use it; otherwise preserve existing
+      const newTag = tag !== undefined ? tag : (existing?.tag || null);
+      newSelections.set(cardId, { quantity, tag: newTag });
     } else {
       newSelections.delete(cardId);
     }
@@ -926,14 +1127,23 @@ function CardSelectorWithQuantity({
     // Debounce the database save (wait 500ms after last change)
     setIsSaving(true);
     saveTimeoutRef.current = setTimeout(async () => {
-      const selectionsArray: Array<{ cardId: string; quantity: number }> = [];
-      newSelections.forEach((qty, id) => {
-        selectionsArray.push({ cardId: id, quantity: qty });
+      const selectionsArray: Array<{ cardId: string; quantity: number; tag: string | null }> = [];
+      newSelections.forEach((data, id) => {
+        selectionsArray.push({ cardId: id, quantity: data.quantity, tag: data.tag });
       });
       
       await onSelectionChange(selectionsArray);
       setIsSaving(false);
     }, 500);
+  };
+  
+  const updateCardTag = (cardId: string, tag: string | null) => {
+    const existing = selectedMap.get(cardId);
+    if (existing) {
+      // If tag is empty string from select, convert to null
+      const normalizedTag = tag === '' ? null : tag;
+      updateCardSelection(cardId, existing.quantity, normalizedTag);
+    }
   };
 
   return (
@@ -960,7 +1170,9 @@ function CardSelectorWithQuantity({
       <div className="max-h-96 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-md p-2 bg-white dark:bg-gray-800">
         {filteredCards.map((card) => {
           const isSelected = selectedMap.has(card.id);
-          const quantity = selectedMap.get(card.id) || 1;
+          const selection = selectedMap.get(card.id);
+          const quantity = selection?.quantity || 1;
+          const tag = selection?.tag || null;
           
           return (
             <div
@@ -972,7 +1184,7 @@ function CardSelectorWithQuantity({
                 checked={isSelected}
                 onChange={(e) => {
                   if (e.target.checked) {
-                    updateCardSelection(card.id, 1);
+                    updateCardSelection(card.id, 1, null);
                   } else {
                     updateCardSelection(card.id, 0);
                   }
@@ -989,11 +1201,27 @@ function CardSelectorWithQuantity({
                     value={quantity}
                     onChange={(e) => {
                       const newQty = parseInt(e.target.value) || 1;
-                      updateCardSelection(card.id, newQty);
+                      updateCardSelection(card.id, newQty, tag);
                     }}
                     onClick={(e) => e.stopPropagation()}
                     className="w-16 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   />
+                  <label className="text-xs text-gray-600 dark:text-gray-400">Tag:</label>
+                  <select
+                    value={tag || ''}
+                    onChange={(e) => {
+                      const newTag = e.target.value || null;
+                      updateCardTag(card.id, newTag);
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  >
+                    {TAG_OPTIONS.map(option => (
+                      <option key={option.value || 'none'} value={option.value || ''}>
+                        {option.emoji} {option.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               )}
             </div>

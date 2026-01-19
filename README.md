@@ -53,8 +53,12 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 
 - Card database synced from Riftcodex API
 - User profiles with have/want card lists
+- Tag system for organizing cards (Important, Question, Urgent, Price)
 - Search and matchmaking functionality
+- Export card lists as PDF or PNG with progress tracking
+- Download card lists as text files
 - Simple email/password authentication
+- Dark mode support
 
 ## Legal
 

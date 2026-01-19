@@ -59,6 +59,8 @@ export default function Home() {
               <ul className="list-disc list-inside mt-2 space-y-1 text-gray-600 dark:text-gray-400 ml-4">
                 <li><strong>Enhanced security</strong> with input sanitization and URL validation</li>
                 <li><strong>Implemented dark mode support</strong> with theme toggle</li>
+                <li>Added tag system for organizing cards (Important ❗, Question ❓, Urgent ⏰, Price 💰)</li>
+                <li>Added PNG export functionality for card lists with multi-page support</li>
                 <li>Added text file download for card lists</li>
                 <li>Added PDF export functionality for card lists with progress tracking</li>
               </ul>
