@@ -111,42 +111,55 @@ export default function ProfilePage() {
       setTradingLocations(profileData.trading_locations || '');
       setUsername(profileData.username || '');
 
-      // Load have cards with quantities, sorted by set_code then sort_key
-      // Try to select tag, but if column doesn't exist yet, fall back to without tag
-      let haveData;
+      // Load have cards with quantities and tags, sorted by set_code then sort_key
       let haveQuery = supabase
         .from('profile_have_cards')
         .select('id, quantity, tag, cards(*)')
         .eq('profile_id', profileData.id);
-      
-      const { data: haveDataWithTag, error: haveTagError } = await haveQuery;
-      
-      if (haveTagError && haveTagError.message?.includes('tag')) {
-        // Tag column doesn't exist yet - query without it
-        const { data } = await supabase
+
+      const { data: haveData, error: haveError } = await haveQuery;
+
+      if (haveError && haveError.code === '42703') { // Column 'tag' does not exist
+        console.warn("Column 'tag' not found, retrying query without 'tag' column.");
+        const { data: haveDataFallback } = await supabase
           .from('profile_have_cards')
           .select('id, quantity, cards(*)')
           .eq('profile_id', profileData.id);
-        haveData = data;
-      } else {
-        haveData = haveDataWithTag;
-      }
+        
+        if (haveDataFallback) {
+          const cardsWithQuantity = haveDataFallback
+            .map((item: any) => ({
+              ...item.cards,
+              quantity: item.quantity || 1,
+              tag: null, // Default to null if column doesn't exist
+              relationId: item.id,
+            }))
+            .filter((item: any) => item.id)
+            .sort((a: any, b: any) => {
+              if (a.set_code !== b.set_code) {
+                return (a.set_code || '').localeCompare(b.set_code || '');
+              }
+              if (!a.sort_key && !b.sort_key) return 0;
+              if (!a.sort_key) return 1;
+              if (!b.sort_key) return -1;
+              return a.sort_key.localeCompare(b.sort_key, undefined, { numeric: true, sensitivity: 'base' });
+            });
+          setHaveCards(cardsWithQuantity);
+        }
+      } else if (haveData) {
 
-      if (haveData) {
         const cardsWithQuantity = haveData
           .map((item: any) => ({
             ...item.cards,
             quantity: item.quantity || 1,
-            tag: item.tag || null, // Will be null if column doesn't exist
+            tag: item.tag || null,
             relationId: item.id,
           }))
-          .filter((item: any) => item.id) // Filter out null cards
+          .filter((item: any) => item.id)
           .sort((a: any, b: any) => {
-            // Sort by set_code first
             if (a.set_code !== b.set_code) {
               return (a.set_code || '').localeCompare(b.set_code || '');
             }
-            // Then by sort_key
             if (!a.sort_key && !b.sort_key) return 0;
             if (!a.sort_key) return 1;
             if (!b.sort_key) return -1;
@@ -155,42 +168,54 @@ export default function ProfilePage() {
         setHaveCards(cardsWithQuantity);
       }
 
-      // Load want cards with quantities, sorted by set_code then sort_key
-      // Try to select tag, but if column doesn't exist yet, fall back to without tag
-      let wantData;
+      // Load want cards with quantities and tags, sorted by set_code then sort_key
       let wantQuery = supabase
         .from('profile_want_cards')
         .select('id, quantity, tag, cards(*)')
         .eq('profile_id', profileData.id);
-      
-      const { data: wantDataWithTag, error: wantTagError } = await wantQuery;
-      
-      if (wantTagError && wantTagError.message?.includes('tag')) {
-        // Tag column doesn't exist yet - query without it
-        const { data } = await supabase
+
+      const { data: wantData, error: wantError } = await wantQuery;
+
+      if (wantError && wantError.code === '42703') { // Column 'tag' does not exist
+        console.warn("Column 'tag' not found, retrying query without 'tag' column.");
+        const { data: wantDataFallback } = await supabase
           .from('profile_want_cards')
           .select('id, quantity, cards(*)')
           .eq('profile_id', profileData.id);
-        wantData = data;
-      } else {
-        wantData = wantDataWithTag;
-      }
-
-      if (wantData) {
+        
+        if (wantDataFallback) {
+          const cardsWithQuantity = wantDataFallback
+            .map((item: any) => ({
+              ...item.cards,
+              quantity: item.quantity || 1,
+              tag: null, // Default to null if column doesn't exist
+              relationId: item.id,
+            }))
+            .filter((item: any) => item.id)
+            .sort((a: any, b: any) => {
+              if (a.set_code !== b.set_code) {
+                return (a.set_code || '').localeCompare(b.set_code || '');
+              }
+              if (!a.sort_key && !b.sort_key) return 0;
+              if (!a.sort_key) return 1;
+              if (!b.sort_key) return -1;
+              return a.sort_key.localeCompare(b.sort_key, undefined, { numeric: true, sensitivity: 'base' });
+            });
+          setWantCards(cardsWithQuantity);
+        }
+      } else if (wantData) {
         const cardsWithQuantity = wantData
           .map((item: any) => ({
             ...item.cards,
             quantity: item.quantity || 1,
-            tag: item.tag || null, // Will be null if column doesn't exist
+            tag: item.tag || null,
             relationId: item.id,
           }))
-          .filter((item: any) => item.id) // Filter out null cards
+          .filter((item: any) => item.id)
           .sort((a: any, b: any) => {
-            // Sort by set_code first
             if (a.set_code !== b.set_code) {
               return (a.set_code || '').localeCompare(b.set_code || '');
             }
-            // Then by sort_key
             if (!a.sort_key && !b.sort_key) return 0;
             if (!a.sort_key) return 1;
             if (!b.sort_key) return -1;
@@ -756,16 +781,19 @@ export default function ProfilePage() {
                         return;
                       }
                       
-                      // Add new ones with quantities
+                      // Add new ones with quantities and tags
                       if (cardSelections.length > 0) {
+                        // Explicitly handle null tags - Supabase needs null, not undefined
+                        const insertData = cardSelections.map(({ cardId, quantity, tag }) => ({
+                          profile_id: profile.id,
+                          card_id: cardId,
+                          quantity: quantity || 1,
+                          tag: tag === null || tag === undefined ? null : tag,
+                        }));
+                        
                         const { error: insertError } = await supabase
                           .from('profile_have_cards')
-                          .insert(cardSelections.map(({ cardId, quantity, tag }) => ({
-                            profile_id: profile.id,
-                            card_id: cardId,
-                            quantity: quantity || 1,
-                            tag: tag || null,
-                          })));
+                          .insert(insertData);
                         
                         if (insertError) {
                           console.error('Error inserting cards:', insertError);
@@ -992,15 +1020,19 @@ export default function ProfilePage() {
                       return;
                     }
                     
-                    // Add new ones with quantities
+                    // Add new ones with quantities and tags
                     if (cardSelections.length > 0) {
+                      // Explicitly handle null tags - Supabase needs null, not undefined
+                      const insertData = cardSelections.map(({ cardId, quantity, tag }) => ({
+                        profile_id: profile.id,
+                        card_id: cardId,
+                        quantity: quantity || 1,
+                        tag: tag === null || tag === undefined || tag === '' ? null : tag,
+                      }));
+                      
                       const { error: insertError } = await supabase
                         .from('profile_want_cards')
-                        .insert(cardSelections.map(({ cardId, quantity }) => ({
-                          profile_id: profile.id,
-                          card_id: cardId,
-                          quantity: quantity || 1,
-                        })));
+                        .insert(insertData);
                       
                       if (insertError) {
                         console.error('Error inserting cards:', insertError);
