@@ -318,7 +318,7 @@ export async function generateCardListPDF(
     '💰': 'Price',
   };
   
-  let titleText = title;
+  let titleText: string = title;
   if (tag && tag !== 'all' && tag !== 'no-tag') {
     // Convert emoji to label for PDF (since PDF doesn't support emojis well)
     const tagLabel = emojiToLabel[tag] || tag;
@@ -557,7 +557,7 @@ export async function generateCardListPNG(
   const totalPages = Math.ceil(cards.length / cardsPerPage);
   
   // Build title text - handle emoji properly
-  let titleText = title;
+  let titleText: string = title;
   if (tag && tag !== 'all' && tag !== 'no-tag') {
     titleText = `${title} [Tagged: ${tag}]`;
   }
