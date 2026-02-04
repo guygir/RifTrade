@@ -3,7 +3,6 @@
 // Used by Vercel cron jobs or manual refresh
 
 import { NextRequest, NextResponse } from 'next/server';
-import { aggregateMetaData } from '@/lib/meta-data/meta-aggregator';
 
 // Force Node.js runtime for cheerio compatibility
 export const runtime = 'nodejs';
@@ -48,6 +47,9 @@ export async function POST(request: NextRequest) {
     console.log('[API /meta/refresh] Starting meta data refresh...');
     const startTime = Date.now();
 
+    // Dynamic import to avoid build-time issues with cheerio
+    const { aggregateMetaData } = await import('@/lib/meta-data/meta-aggregator');
+    
     // Trigger the aggregation process
     const result = await aggregateMetaData(supabaseUrl, supabaseKey);
 
