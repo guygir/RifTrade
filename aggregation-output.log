@@ -1,0 +1,318 @@
+[dotenv@17.2.3] injecting env (6) from .env.local -- tip: 👥 sync secrets across teammates & machines: https://dotenvx.com/ops
+Testing full meta data aggregation...
+
+Starting aggregation...
+This will:
+1. Fetch all champions from Riftbound tier list
+2. Look up each champion's Legend card in database
+3. Fetch top 3 decks per champion from RiftMana
+4. Extract and match all cards
+5. Calculate tier-weighted usage metrics
+6. Store results in database
+
+[MetaAggregator] Starting meta data aggregation...
+[MetaAggregator] Step 1: Fetching Riftbound tier list...
+[Riftbound] Starting fetch from: https://riftbound.gg/tier-list/
+[Riftbound] HTML fetched, length: 326361
+[Riftbound] Found S Tier section
+[Riftbound] Found Tier 1 section
+[Riftbound] Found Tier 2 section
+[Riftbound] Found Tier 3 section
+[Riftbound] Found Tier 4 section
+[Riftbound] Successfully parsed 44 decks
+[MetaAggregator] Found 44 champions across all tiers
+[MetaAggregator] Step 2: Fetching top 3 decks per champion from RiftMana...
+[ChampionLookup] ✅ Draven -> Glorious Executioner (SFD-185)
+[RiftMana] Fetching decks for Draven (sfd-185, S tier)
+[RiftMana]   Miracle draven: 21 cards
+[RiftMana]   draven regional winner SPF: 24 cards
+[RiftMana]   Draven Test: 23 cards
+[RiftMana] Fetched 3 decks for Draven
+[ChampionLookup] ✅ Kai'Sa -> Daughter of the Void (OGN-247)
+[RiftMana] Fetching decks for Kai'Sa (ogn-247, 1 tier)
+[RiftMana]   Kai'sa Spellslinger Control: 26 cards
+[RiftMana]   Atomic bomb Kaisa: 21 cards
+[RiftMana]   Kaisa Skirmish: 23 cards
+[RiftMana] Fetched 3 decks for Kai'Sa
+[ChampionLookup] ✅ Annie -> Dark Child - Starter (OGS-017)
+[RiftMana] Fetching decks for Annie (ogs-017, 1 tier)
+[RiftMana]   Annie s1: 27 cards
+[RiftMana]   Annie Spell: 23 cards
+[RiftMana]   annie s2: 24 cards
+[RiftMana] Fetched 3 decks for Annie
+[ChampionLookup] ✅ Irelia -> Blade Dancer (SFD-195)
+[RiftMana] Fetching decks for Irelia (sfd-195, 1 tier)
+[RiftMana]   1st Guangzhou City Challenge: 30 cards
+[RiftMana]   la irelia vieja era mas chevere: 24 cards
+[RiftMana]   value: 26 cards
+[RiftMana] Fetched 3 decks for Irelia
+[ChampionLookup] ✅ Fiora -> Grand Duelist (SFD-205)
+[RiftMana] Fetching decks for Fiora (sfd-205, 1 tier)
+[RiftMana]   Baited hook fiora: 25 cards
+[RiftMana]   Fiora: 25 cards
+[RiftMana]   hook fiora: 23 cards
+[RiftMana] Fetched 3 decks for Fiora
+[ChampionLookup] ✅ Master Yi -> Wuju Bladesman - Starter (OGS-019)
+[RiftMana] Fetching decks for Master Yi (ogs-019, 2 tier)
+[RiftMana]   Yi: 27 cards
+[RiftMana]   spirit yi budget: 29 cards
+[RiftMana]   YI 2: 22 cards
+[RiftMana] Fetched 3 decks for Master Yi
+[ChampionLookup] ✅ Miss Fortune -> Bounty Hunter (Overnumbered) (OGN-309)
+[RiftMana] Fetching decks for Miss Fortune (ogn-309, 2 tier)
+[RiftMana]   Jinx Affordable Improved: 24 cards
+[RiftMana]   Kai'sa Spellslinger Control: 26 cards
+[RiftMana]   Grandmaster of Arms: 25 cards
+[RiftMana] Fetched 3 decks for Miss Fortune
+[ChampionLookup] ✅ Sett -> The Boss (OGN-269)
+[RiftMana] Fetching decks for Sett (ogn-269, 2 tier)
+[RiftMana]   Dazzling Sett FFA: 23 cards
+[RiftMana]   Sett: 22 cards
+[RiftMana]   sett but different: 24 cards
+[RiftMana] Fetched 3 decks for Sett
+[ChampionLookup] ✅ Teemo -> Swift Scout (OGN-263)
+[RiftMana] Fetching decks for Teemo (ogn-263, 2 tier)
+[RiftMana]   Teemo Hidden: 22 cards
+[RiftMana]   Very Sneaky: 21 cards
+[RiftMana]   temotemo: 24 cards
+[RiftMana] Fetched 3 decks for Teemo
+[ChampionLookup] ✅ Ezreal -> Prodigal Explorer (Alternate art) (SFD-248)
+[RiftMana] Fetching decks for Ezreal (sfd-248, 2 tier)
+[RiftMana]   Jinx Affordable Improved: 24 cards
+[RiftMana]   Kai'sa Spellslinger Control: 26 cards
+[RiftMana]   Grandmaster of Arms: 25 cards
+[RiftMana] Fetched 3 decks for Ezreal
+[ChampionLookup] ✅ Annie -> Dark Child - Starter (OGS-017)
+[RiftMana] Fetching decks for Annie (ogs-017, 2 tier)
+[RiftMana]   Annie s1: 27 cards
+[RiftMana]   annie s2: 24 cards
+[RiftMana]   Annie Spell: 23 cards
+[RiftMana] Fetched 3 decks for Annie
+[ChampionLookup] ✅ Kai'Sa -> Daughter of the Void (OGN-247)
+[RiftMana] Fetching decks for Kai'Sa (ogn-247, 2 tier)
+[RiftMana]   Kai'sa Spellslinger Control: 26 cards
+[RiftMana]   Atomic bomb Kaisa: 21 cards
+[RiftMana]   Kaisa Skirmish: 23 cards
+[RiftMana] Fetched 3 decks for Kai'Sa
+[ChampionLookup] ✅ Azir -> Emperor of the Sands (SFD-197)
+[RiftMana] Fetching decks for Azir (sfd-197, 2 tier)
+[RiftMana]   Azir - China: 23 cards
+[RiftMana]   Karthus Azir: 22 cards
+[RiftMana]   green bird man: 23 cards
+[RiftMana] Fetched 3 decks for Azir
+[ChampionLookup] ✅ Lucian -> Purifier (SFD-183)
+[RiftMana] Fetching decks for Lucian (sfd-183, 2 tier)
+[RiftMana]   Rellcian: 31 cards
+[RiftMana]   lucian por mientras: 26 cards
+[RiftMana]   Lucian Conquer: 24 cards
+[RiftMana] Fetched 3 decks for Lucian
+[ChampionLookup] ✅ Viktor -> Herald of the Arcane (Overnumbered) (OGN-308)
+[RiftMana] Fetching decks for Viktor (ogn-308, 2 tier)
+[RiftMana]   Jinx Affordable Improved: 24 cards
+[RiftMana]   Kai'sa Spellslinger Control: 26 cards
+[RiftMana]   Grandmaster of Arms: 25 cards
+[RiftMana] Fetched 3 decks for Viktor
+[ChampionLookup] ✅ Sett -> The Boss (OGN-269)
+[RiftMana] Fetching decks for Sett (ogn-269, 2 tier)
+[RiftMana]   Dazzling Sett FFA: 23 cards
+[RiftMana]   sett but different: 24 cards
+[RiftMana]   Sett: 22 cards
+[RiftMana] Fetched 3 decks for Sett
+[ChampionLookup] ✅ Viktor -> Herald of the Arcane (Overnumbered) (OGN-308)
+[RiftMana] Fetching decks for Viktor (ogn-308, 3 tier)
+[RiftMana]   Jinx Affordable Improved: 24 cards
+[RiftMana]   Kai'sa Spellslinger Control: 26 cards
+[RiftMana]   Grandmaster of Arms: 25 cards
+[RiftMana] Fetched 3 decks for Viktor
+[ChampionLookup] ✅ Darius -> Hand of Noxus (Overnumbered) (OGN-302)
+[RiftMana] Fetching decks for Darius (ogn-302, 3 tier)
+[RiftMana]   Jinx Affordable Improved: 24 cards
+[RiftMana]   Kai'sa Spellslinger Control: 26 cards
+[RiftMana]   Grandmaster of Arms: 25 cards
+[RiftMana] Fetched 3 decks for Darius
+[ChampionLookup] ✅ Yasuo -> Unforgiven (Overnumbered) (OGN-305)
+[RiftMana] Fetching decks for Yasuo (ogn-305, 3 tier)
+[RiftMana]   Jinx Affordable Improved: 24 cards
+[RiftMana]   Grandmaster of Arms: 25 cards
+[RiftMana]   Kai'sa Spellslinger Control: 26 cards
+[RiftMana] Fetched 3 decks for Yasuo
+[ChampionLookup] ✅ Sivir -> Battle Mistress (SFD-203)
+[RiftMana] Fetching decks for Sivir (sfd-203, 3 tier)
+[RiftMana]   Sivir: 22 cards
+[RiftMana]   Sivir tempo: 25 cards
+[RiftMana]   Top 4 Dalian Regional: 24 cards
+[RiftMana] Fetched 3 decks for Sivir
+[ChampionLookup] ✅ Rek'Sai -> Void Burrower (SFD-187)
+[RiftMana] Fetching decks for Rek'Sai (sfd-187, 3 tier)
+[RiftMana]   Lurk: 23 cards
+[RiftMana]   Rek Sai Test: 24 cards
+[RiftMana]   Rekky: 24 cards
+[RiftMana] Fetched 3 decks for Rek'Sai
+[ChampionLookup] ✅ Master Yi -> Wuju Bladesman - Starter (OGS-019)
+[RiftMana] Fetching decks for Master Yi (ogs-019, 3 tier)
+[RiftMana]   Yi: 27 cards
+[RiftMana]   YI 2: 22 cards
+[RiftMana]   spirit yi budget: 29 cards
+[RiftMana] Fetched 3 decks for Master Yi
+[ChampionLookup] ✅ Ornn -> Fire Below the Mountain (SFD-189)
+[RiftMana] Fetching decks for Ornn (sfd-189, 3 tier)
+[RiftMana]   Ornn Goes Hard!!!: 25 cards
+[RiftMana]   Cait Headshot Go Boom XD: 25 cards
+[RiftMana]   Ornn Time: 29 cards
+[RiftMana] Fetched 3 decks for Ornn
+[ChampionLookup] ✅ Ahri -> Nine-Tailed Fox (Overnumbered) (OGN-303)
+[RiftMana] Fetching decks for Ahri (ogn-303, 3 tier)
+[RiftMana]   Jinx Affordable Improved: 24 cards
+[RiftMana]   Kai'sa Spellslinger Control: 26 cards
+[RiftMana]   Grandmaster of Arms: 25 cards
+[RiftMana] Fetched 3 decks for Ahri
+[ChampionLookup] ✅ Leona -> Radiant Dawn (Overnumbered) (OGN-306)
+[RiftMana] Fetching decks for Leona (ogn-306, 3 tier)
+[RiftMana]   Jinx Affordable Improved: 24 cards
+[RiftMana]   Grandmaster of Arms: 25 cards
+[RiftMana]   Kai'sa Spellslinger Control: 26 cards
+[RiftMana] Fetched 3 decks for Leona
+[ChampionLookup] ✅ Jax -> Grandmaster at Arms (SFD-193)
+[RiftMana] Fetching decks for Jax (sfd-193, 3 tier)
+[RiftMana]   Grandmaster of Arms: 25 cards
+[RiftMana]   Top 8 Dalian Regional: 22 cards
+[RiftMana]   Jax Double Up: 26 cards
+[RiftMana] Fetched 3 decks for Jax
+[ChampionLookup] ✅ Yasuo -> Unforgiven (Overnumbered) (OGN-305)
+[RiftMana] Fetching decks for Yasuo (ogn-305, 3 tier)
+[RiftMana]   Jinx Affordable Improved: 24 cards
+[RiftMana]   Kai'sa Spellslinger Control: 26 cards
+[RiftMana]   Grandmaster of Arms: 25 cards
+[RiftMana] Fetched 3 decks for Yasuo
+[ChampionLookup] ✅ Lux -> Lady of Luminosity - Starter (OGS-021)
+[RiftMana] Fetching decks for Lux (ogs-021, 3 tier)
+[RiftMana]   Lux for now: 26 cards
+[RiftMana]   lux: 26 cards
+[RiftMana]   4th Shanghai City Challenge: 24 cards
+[RiftMana] Fetched 3 decks for Lux
+[ChampionLookup] ✅ Lee Sin -> Blind Monk (Overnumbered) (OGN-304)
+[RiftMana] Fetching decks for Lee Sin (ogn-304, 4 tier)
+[RiftMana]   Jinx Affordable Improved: 24 cards
+[RiftMana]   Kai'sa Spellslinger Control: 26 cards
+[RiftMana]   Grandmaster of Arms: 25 cards
+[RiftMana] Fetched 3 decks for Lee Sin
+[ChampionLookup] ✅ Volibear -> Relentless Storm (OGN-249)
+[RiftMana] Fetching decks for Volibear (ogn-249, 4 tier)
+[RiftMana]   Volibear Ramp: 21 cards
+[RiftMana]   Volibear dragons SFD: 25 cards
+[RiftMana]   Casual Volibear: 27 cards
+[RiftMana] Fetched 3 decks for Volibear
+[ChampionLookup] ✅ Ahri -> Nine-Tailed Fox (Overnumbered) (OGN-303)
+[RiftMana] Fetching decks for Ahri (ogn-303, 4 tier)
+[RiftMana]   Jinx Affordable Improved: 24 cards
+[RiftMana]   Kai'sa Spellslinger Control: 26 cards
+[RiftMana]   Grandmaster of Arms: 25 cards
+[RiftMana] Fetched 3 decks for Ahri
+[ChampionLookup] ✅ Jinx -> Loose Cannon (OGN-251)
+[RiftMana] Fetching decks for Jinx (ogn-251, 4 tier)
+[RiftMana]   Jinx Affordable Improved: 24 cards
+[RiftMana]   Jinx Roxa: 22 cards
+[RiftMana]   Jinx Top Deck: 22 cards
+[RiftMana] Fetched 3 decks for Jinx
+[ChampionLookup] ✅ Leona -> Radiant Dawn (Overnumbered) (OGN-306)
+[RiftMana] Fetching decks for Leona (ogn-306, 4 tier)
+[RiftMana]   Jinx Affordable Improved: 24 cards
+[RiftMana]   Grandmaster of Arms: 25 cards
+[RiftMana]   Kai'sa Spellslinger Control: 26 cards
+[RiftMana] Fetched 3 decks for Leona
+[ChampionLookup] ✅ Lux -> Lady of Luminosity - Starter (OGS-021)
+[RiftMana] Fetching decks for Lux (ogs-021, 4 tier)
+[RiftMana]   lux: 26 cards
+[RiftMana]   4th Shanghai City Challenge: 24 cards
+[RiftMana]   Lux for now: 26 cards
+[RiftMana] Fetched 3 decks for Lux
+[ChampionLookup] ✅ Garen -> Might of Demacia - Starter (OGS-023)
+[RiftMana] Fetching decks for Garen (ogs-023, 4 tier)
+[RiftMana]   Garen: 26 cards
+[RiftMana] Fetched 1 decks for Garen
+[ChampionLookup] ✅ Miss Fortune -> Bounty Hunter (Overnumbered) (OGN-309)
+[RiftMana] Fetching decks for Miss Fortune (ogn-309, 4 tier)
+[RiftMana]   Jinx Affordable Improved: 24 cards
+[RiftMana]   Kai'sa Spellslinger Control: 26 cards
+[RiftMana]   Grandmaster of Arms: 25 cards
+[RiftMana] Fetched 3 decks for Miss Fortune
+[ChampionLookup] ✅ Jinx -> Loose Cannon (OGN-251)
+[RiftMana] Fetching decks for Jinx (ogn-251, 4 tier)
+[RiftMana]   Jinx Affordable Improved: 24 cards
+[RiftMana]   Jinx Roxa: 22 cards
+[RiftMana]   Jinx Top Deck: 22 cards
+[RiftMana] Fetched 3 decks for Jinx
+[ChampionLookup] ✅ Renata Glasc -> Chem-Baroness (SFD-201)
+[RiftMana] Fetching decks for Renata Glasc (sfd-201, 4 tier)
+[RiftMana]   Renata Hook: 23 cards
+[RiftMana]   Renata V1.2: 22 cards
+[RiftMana]   Renata: 20 cards
+[RiftMana] Fetched 3 decks for Renata Glasc
+[ChampionLookup] ✅ Teemo -> Swift Scout (OGN-263)
+[RiftMana] Fetching decks for Teemo (ogn-263, 4 tier)
+[RiftMana]   Teemo Hidden: 22 cards
+[RiftMana]   temotemo: 24 cards
+[RiftMana]   Very Sneaky: 21 cards
+[RiftMana] Fetched 3 decks for Teemo
+[ChampionLookup] ✅ Rumble -> Mechanized Menace (SFD-181)
+[RiftMana] Fetching decks for Rumble (sfd-181, 4 tier)
+[RiftMana]   mech heimer ramp: 22 cards
+[RiftMana]   Rumblin: 22 cards
+[RiftMana]   rumble: 26 cards
+[RiftMana] Fetched 3 decks for Rumble
+[ChampionLookup] ✅ Lee Sin -> Blind Monk (Overnumbered) (OGN-304)
+[RiftMana] Fetching decks for Lee Sin (ogn-304, 4 tier)
+[RiftMana]   Jinx Affordable Improved: 24 cards
+[RiftMana]   Grandmaster of Arms: 25 cards
+[RiftMana]   Kai'sa Spellslinger Control: 26 cards
+[RiftMana] Fetched 3 decks for Lee Sin
+[ChampionLookup] ✅ Volibear -> Relentless Storm (OGN-249)
+[RiftMana] Fetching decks for Volibear (ogn-249, 4 tier)
+[RiftMana]   Volibear Ramp: 21 cards
+[RiftMana]   Casual Volibear: 27 cards
+[RiftMana]   Volibear dragons SFD: 25 cards
+[RiftMana] Fetched 3 decks for Volibear
+[ChampionLookup] ✅ Darius -> Hand of Noxus (Overnumbered) (OGN-302)
+[RiftMana] Fetching decks for Darius (ogn-302, 4 tier)
+[RiftMana]   Jinx Affordable Improved: 24 cards
+[RiftMana]   Kai'sa Spellslinger Control: 26 cards
+[RiftMana]   Grandmaster of Arms: 25 cards
+[RiftMana] Fetched 3 decks for Darius
+[ChampionLookup] ✅ Garen -> Might of Demacia - Starter (OGS-023)
+[RiftMana] Fetching decks for Garen (ogs-023, 4 tier)
+[RiftMana]   Garen: 26 cards
+[RiftMana] Fetched 1 decks for Garen
+[MetaAggregator] Champion processing complete:
+  - Successful: 44/44
+  - Failed: 0
+  - Total decks: 128
+  - Total card instances: 3126
+[MetaAggregator] Step 3: Normalizing tier list for deck display...
+[MetaAggregator] Normalized 44 decks for display
+[MetaAggregator] Step 4: Matching cards to database...
+[Card Matcher] Matching 383 unique cards...
+[Card Matcher] Found 942 cards in database
+[Card Matcher] Matched: 3126, Unmatched: 0
+[MetaAggregator] Matched 3126 card instances to database
+[MetaAggregator] Step 5: Calculating weighted usage statistics...
+[MetaAggregator] Calculated stats for 383 unique cards
+[MetaAggregator] Step 6: Storing in database...
+[MetaAggregator] ❌ Aggregation failed: Error: Failed to create snapshot: new row violates row-level security policy for table "meta_snapshots"
+    at aggregateMetaData (/Users/guygirmonsky/Rift/lib/meta-data/meta-aggregator.ts:137:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async test (/Users/guygirmonsky/Rift/scripts/test-full-aggregation.ts:29:18)
+
+================================================================================
+AGGREGATION RESULT:
+================================================================================
+{
+  "success": false,
+  "errors": [
+    "Failed to create snapshot: new row violates row-level security policy for table \"meta_snapshots\""
+  ]
+}
+
+❌ Aggregation failed
+Errors: [
+  'Failed to create snapshot: new row violates row-level security policy for table "meta_snapshots"'
+]

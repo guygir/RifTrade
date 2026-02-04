@@ -1,9 +1,10 @@
 import Link from "next/link";
+import PopularDecksByTier from "@/components/PopularDecksByTier";
 
 export default function Home() {
   return (
     <main className="min-h-screen p-8">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         <h1 className="text-4xl font-bold mb-4">RifTrade - Riftbound Card Swap</h1>
         <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">
           A lightweight, non-commercial community card swap directory for the Riftbound TCG.
@@ -11,12 +12,12 @@ export default function Home() {
 
         <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4 mb-8">
           <p className="text-sm text-yellow-800 dark:text-yellow-200">
-            <strong>Disclaimer:</strong> This is an unofficial app. It does not facilitate or guarantee trades. 
+            <strong>Disclaimer:</strong> This is an unofficial app. It does not facilitate or guarantee trades.
             All trades happen externally between users. This platform acts as a bulletin board/matchmaking tool only.
           </p>
         </div>
 
-        <nav className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <nav className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12">
           <Link 
             href="/cards" 
             className="p-6 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
@@ -47,13 +48,30 @@ export default function Home() {
           </Link>
         </nav>
 
+        {/* Popular Decks Section */}
+        <div className="mb-12">
+          <PopularDecksByTier />
+        </div>
+
         <div className="mt-12 text-sm text-gray-500 dark:text-gray-400">
-          <p>Card data sourced from <a href="https://riftcodex.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-600 dark:hover:text-blue-400">Riftcodex</a></p>
+          <p>
+            Card data sourced from <a href="https://riftcodex.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-600 dark:hover:text-blue-400">Riftcodex</a>
+            {' • '}
+            Meta data from <a href="https://riftbound.gg" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-600 dark:hover:text-blue-400">Riftbound.gg</a> and <a href="https://riftmana.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-600 dark:hover:text-blue-400">RiftMana.com</a>
+          </p>
         </div>
 
         <div className="mt-12 border-t border-gray-200 dark:border-gray-700 pt-8">
           <h2 className="text-2xl font-bold mb-4">Changelog</h2>
           <div className="space-y-4 text-sm">
+            <div>
+              <p className="font-semibold text-gray-900 dark:text-white">February 2026</p>
+              <ul className="list-disc list-inside mt-2 space-y-1 text-gray-600 dark:text-gray-400 ml-4">
+                <li><strong>Popular Decks & Cards feature</strong> - View meta decks by tier and most-played cards with automatic daily updates</li>
+                <li>Tier-weighted card statistics with Selling/Buying indicators across all users</li>
+                <li>Collapsible sections for better page organization</li>
+              </ul>
+            </div>
             <div>
               <p className="font-semibold text-gray-900 dark:text-white">January 2025</p>
               <ul className="list-disc list-inside mt-2 space-y-1 text-gray-600 dark:text-gray-400 ml-4">

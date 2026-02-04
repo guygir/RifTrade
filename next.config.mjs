@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Mark cheerio and undici as external to prevent bundling issues with Node.js 18
+  experimental: {
+    serverComponentsExternalPackages: ['cheerio', 'undici'],
+  },
   eslint: {
     // Disable ESLint during builds (we'll rely on type checking instead)
     ignoreDuringBuilds: true,

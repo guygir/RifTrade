@@ -1,0 +1,227 @@
+[dotenv@17.2.3] injecting env (6) from .env.local -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+Testing full meta data aggregation...
+
+Starting aggregation...
+This will:
+1. Fetch all champions from Riftbound tier list
+2. Look up each champion's Legend card in database
+3. Fetch top 3 decks per champion from RiftMana
+4. Extract and match all cards
+5. Calculate tier-weighted usage metrics
+6. Store results in database
+
+[MetaAggregator] Starting meta data aggregation...
+[MetaAggregator] Step 1: Fetching Riftbound tier list...
+[Riftbound] Starting fetch from: https://riftbound.gg/tier-list/
+[Riftbound] HTML fetched, length: 348026
+[Riftbound] Latest meta accordion ID: 2
+[Riftbound] Found S Tier section
+[Riftbound] Found Tier 1 section
+[Riftbound] Found Tier 2 section
+[Riftbound] Found Tier 3 section
+[Riftbound] Found Tier 4 section
+[Riftbound] Successfully parsed 28 decks
+[MetaAggregator] Found 28 champions across all tiers
+[MetaAggregator] Step 2: Fetching top 3 decks per champion from RiftMana...
+[ChampionLookup] ✅ Draven -> Glorious Executioner (SFD-185)
+[RiftMana] Fetching decks for Draven (sfd-185, S tier)
+[RiftMana]   Miracle draven: 21 cards
+[RiftMana]   draven regional winner SPF: 24 cards
+[RiftMana]   Draven Test: 23 cards
+[RiftMana] Fetched 3 decks for Draven
+[ChampionLookup] ✅ Irelia -> Blade Dancer (SFD-195)
+[RiftMana] Fetching decks for Irelia (sfd-195, 1 tier)
+[RiftMana]   1st Guangzhou City Challenge: 30 cards
+[RiftMana]   value: 26 cards
+[RiftMana]   la irelia vieja era mas chevere: 24 cards
+[RiftMana] Fetched 3 decks for Irelia
+[ChampionLookup] ✅ Fiora -> Grand Duelist (SFD-205)
+[RiftMana] Fetching decks for Fiora (sfd-205, 1 tier)
+[RiftMana]   Baited hook fiora: 25 cards
+[RiftMana]   Fiora: 25 cards
+[RiftMana]   hook fiora: 23 cards
+[RiftMana] Fetched 3 decks for Fiora
+[ChampionLookup] ✅ Ezreal -> Prodigal Explorer (SFD-199)
+[RiftMana] Fetching decks for Ezreal (sfd-199, 2 tier)
+[RiftMana]   EZ: 24 cards
+[RiftMana]   ez turbo mundo: 23 cards
+[RiftMana]   Spell Recursion Ezreal: 25 cards
+[RiftMana] Fetched 3 decks for Ezreal
+[ChampionLookup] ✅ Annie -> Dark Child - Starter (OGS-017)
+[RiftMana] Fetching decks for Annie (ogs-017, 2 tier)
+[RiftMana]   Annie s1: 27 cards
+[RiftMana]   Annie Spell: 23 cards
+[RiftMana]   annie s2: 24 cards
+[RiftMana] Fetched 3 decks for Annie
+[ChampionLookup] ✅ Kai'Sa -> Daughter of the Void (OGN-247)
+[RiftMana] Fetching decks for Kai'Sa (ogn-247, 2 tier)
+[RiftMana]   Kai'sa Spellslinger Control: 26 cards
+[RiftMana]   Atomic bomb Kaisa: 21 cards
+[RiftMana]   Kaisa Skirmish: 23 cards
+[RiftMana] Fetched 3 decks for Kai'Sa
+[ChampionLookup] ✅ Azir -> Emperor of the Sands (SFD-197)
+[RiftMana] Fetching decks for Azir (sfd-197, 2 tier)
+[RiftMana]   Azir - China: 23 cards
+[RiftMana]   green bird man: 23 cards
+[RiftMana]   Karthus Azir: 22 cards
+[RiftMana] Fetched 3 decks for Azir
+[ChampionLookup] ✅ Lucian -> Purifier (SFD-183)
+[RiftMana] Fetching decks for Lucian (sfd-183, 2 tier)
+[RiftMana]   Rellcian: 31 cards
+[RiftMana]   lucian por mientras: 26 cards
+[RiftMana]   Lucian Conquer: 24 cards
+[RiftMana] Fetched 3 decks for Lucian
+[ChampionLookup] ✅ Viktor -> Herald of the Arcane (OGN-265)
+[RiftMana] Fetching decks for Viktor (ogn-265, 2 tier)
+[RiftMana]   Aggro Viktor: 21 cards
+[RiftMana]   Viktor unit: 25 cards
+[RiftMana]   Viktor Blue Da Be Dee OG: 24 cards
+[RiftMana] Fetched 3 decks for Viktor
+[ChampionLookup] ✅ Sett -> The Boss (OGN-269)
+[RiftMana] Fetching decks for Sett (ogn-269, 2 tier)
+[RiftMana]   Dazzling Sett FFA: 23 cards
+[RiftMana]   Sett: 22 cards
+[RiftMana]   sett but different: 24 cards
+[RiftMana] Fetched 3 decks for Sett
+[ChampionLookup] ✅ Sivir -> Battle Mistress (SFD-203)
+[RiftMana] Fetching decks for Sivir (sfd-203, 3 tier)
+[RiftMana]   Sivir tempo: 25 cards
+[RiftMana]   Sivir: 22 cards
+[RiftMana]   Top 4 Dalian Regional: 24 cards
+[RiftMana] Fetched 3 decks for Sivir
+[ChampionLookup] ✅ Rek'Sai -> Void Burrower (SFD-187)
+[RiftMana] Fetching decks for Rek'Sai (sfd-187, 3 tier)
+[RiftMana]   Lurk: 23 cards
+[RiftMana]   Rekky: 24 cards
+[RiftMana]   Rek Sai Test: 24 cards
+[RiftMana] Fetched 3 decks for Rek'Sai
+[ChampionLookup] ✅ Master Yi -> Wuju Bladesman - Starter (OGS-019)
+[RiftMana] Fetching decks for Master Yi (ogs-019, 3 tier)
+[RiftMana]   Yi: 27 cards
+[RiftMana]   YI 2: 22 cards
+[RiftMana]   spirit yi budget: 29 cards
+[RiftMana] Fetched 3 decks for Master Yi
+[ChampionLookup] ✅ Ornn -> Fire Below the Mountain (SFD-189)
+[RiftMana] Fetching decks for Ornn (sfd-189, 3 tier)
+[RiftMana]   Ornn Goes Hard!!!: 25 cards
+[RiftMana]   Cait Headshot Go Boom XD: 25 cards
+[RiftMana]   Ornn Time: 29 cards
+[RiftMana] Fetched 3 decks for Ornn
+[ChampionLookup] ✅ Ahri -> Nine-Tailed Fox (OGN-255)
+[RiftMana] Fetching decks for Ahri (ogn-255, 3 tier)
+[RiftMana]   Ahri, Nine-Tailed Fox: 25 cards
+[RiftMana]   Budget Theory: 28 cards
+[RiftMana]   Ahri: 22 cards
+[RiftMana] Fetched 3 decks for Ahri
+[ChampionLookup] ✅ Leona -> Radiant Dawn (OGN-261)
+[RiftMana] Fetching decks for Leona (ogn-261, 3 tier)
+[RiftMana]   Leona Stun: 24 cards
+[RiftMana]   Leona: 20 cards
+[RiftMana]   leona retuned to form: 23 cards
+[RiftMana] Fetched 3 decks for Leona
+[ChampionLookup] ✅ Jax -> Grandmaster at Arms (SFD-193)
+[RiftMana] Fetching decks for Jax (sfd-193, 3 tier)
+[RiftMana]   Grandmaster of Arms: 25 cards
+[RiftMana]   Top 8 Dalian Regional: 22 cards
+[RiftMana]   Jax Double Up: 26 cards
+[RiftMana] Fetched 3 decks for Jax
+[ChampionLookup] ✅ Yasuo -> Unforgiven (OGN-259)
+[RiftMana] Fetching decks for Yasuo (ogn-259, 3 tier)
+[RiftMana]   Yasuo Move: 24 cards
+[RiftMana]   Yeetsuo: 26 cards
+[RiftMana]   Miracle Yasuo: 27 cards
+[RiftMana] Fetched 3 decks for Yasuo
+[ChampionLookup] ✅ Lux -> Lady of Luminosity - Starter (OGS-021)
+[RiftMana] Fetching decks for Lux (ogs-021, 3 tier)
+[RiftMana]   Lux for now: 26 cards
+[RiftMana]   lux: 26 cards
+[RiftMana]   4th Shanghai City Challenge: 24 cards
+[RiftMana] Fetched 3 decks for Lux
+[ChampionLookup] ✅ Miss Fortune -> Bounty Hunter (OGN-267)
+[RiftMana] Fetching decks for Miss Fortune (ogn-267, 4 tier)
+[RiftMana]   Aurora MF: 23 cards
+[RiftMana]   MF Bonanza: 22 cards
+[RiftMana]   MF tempo: 26 cards
+[RiftMana] Fetched 3 decks for Miss Fortune
+[ChampionLookup] ✅ Jinx -> Loose Cannon (OGN-251)
+[RiftMana] Fetching decks for Jinx (ogn-251, 4 tier)
+[RiftMana]   Jinx Affordable Improved: 24 cards
+[RiftMana]   Jinx Top Deck: 22 cards
+[RiftMana]   Jinx Roxa: 22 cards
+[RiftMana] Fetched 3 decks for Jinx
+[ChampionLookup] ✅ Renata Glasc -> Chem-Baroness (SFD-201)
+[RiftMana] Fetching decks for Renata Glasc (sfd-201, 4 tier)
+[RiftMana]   Renata Hook: 23 cards
+[RiftMana]   Renata: 20 cards
+[RiftMana]   Renata V1.2: 22 cards
+[RiftMana] Fetched 3 decks for Renata Glasc
+[ChampionLookup] ✅ Teemo -> Swift Scout (OGN-263)
+[RiftMana] Fetching decks for Teemo (ogn-263, 4 tier)
+[RiftMana]   Teemo Hidden: 22 cards
+[RiftMana]   temotemo: 24 cards
+[RiftMana]   Very Sneaky: 21 cards
+[RiftMana] Fetched 3 decks for Teemo
+[ChampionLookup] ✅ Rumble -> Mechanized Menace (SFD-181)
+[RiftMana] Fetching decks for Rumble (sfd-181, 4 tier)
+[RiftMana]   mech heimer ramp: 22 cards
+[RiftMana]   Rumblin: 22 cards
+[RiftMana]   rumble: 26 cards
+[RiftMana] Fetched 3 decks for Rumble
+[ChampionLookup] ✅ Lee Sin -> Blind Monk (OGN-257)
+[RiftMana] Fetching decks for Lee Sin (ogn-257, 4 tier)
+[RiftMana]   Co & unco: 24 cards
+[RiftMana]   No se: 20 cards
+[RiftMana]   Green lee: 27 cards
+[RiftMana] Fetched 3 decks for Lee Sin
+[ChampionLookup] ✅ Volibear -> Relentless Storm (OGN-249)
+[RiftMana] Fetching decks for Volibear (ogn-249, 4 tier)
+[RiftMana]   Volibear Ramp: 21 cards
+[RiftMana]   Casual Volibear: 27 cards
+[RiftMana]   Volibear dragons SFD: 25 cards
+[RiftMana] Fetched 3 decks for Volibear
+[ChampionLookup] ✅ Darius -> Hand of Noxus (OGN-253)
+[RiftMana] Fetching decks for Darius (ogn-253, 4 tier)
+[RiftMana]   Baited Hook: 24 cards
+[RiftMana]   Budget Darius Spiritforged: 21 cards
+[RiftMana]   Darius test: 22 cards
+[RiftMana] Fetched 3 decks for Darius
+[ChampionLookup] ✅ Garen -> Might of Demacia - Starter (OGS-023)
+[RiftMana] Fetching decks for Garen (ogs-023, 4 tier)
+[RiftMana]   Garen: 26 cards
+[RiftMana] Fetched 1 decks for Garen
+[MetaAggregator] Champion processing complete:
+  - Successful: 28/28
+  - Failed: 0
+  - Total decks: 82
+  - Total card instances: 1970
+[MetaAggregator] Step 3: Normalizing tier list for deck display...
+[MetaAggregator] Normalized 28 decks for display
+[MetaAggregator] Step 4: Matching cards to database...
+[Card Matcher] Matching 451 unique cards...
+[Card Matcher] Found 942 cards in database
+[Card Matcher] Matched: 1970, Unmatched: 0
+[MetaAggregator] Matched 1970 card instances to database
+[MetaAggregator] Step 5: Calculating weighted usage statistics...
+[MetaAggregator] Calculated stats for 451 unique cards
+[MetaAggregator] Step 6: Storing in database...
+[MetaAggregator] Created snapshot: 810d067b-0b11-4bf4-b347-63ae4061bed1
+[MetaAggregator] Inserted 28 decks
+[MetaAggregator] Inserted 451 cards
+[MetaAggregator] Step 7: Cleaning up old snapshots...
+[MetaAggregator] Cleaned up snapshots older than 7 days
+[MetaAggregator] ✅ Aggregation complete!
+
+================================================================================
+AGGREGATION RESULT:
+================================================================================
+{
+  "success": true,
+  "snapshotId": "810d067b-0b11-4bf4-b347-63ae4061bed1",
+  "decksCount": 28,
+  "cardsCount": 451
+}
+
+✅ Aggregation successful!
+   Snapshot ID: 810d067b-0b11-4bf4-b347-63ae4061bed1
+   Decks: 28
+   Cards: 451

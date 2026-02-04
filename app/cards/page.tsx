@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { Card } from '@/lib/supabase/types';
 import { createSupabaseClient } from '@/lib/supabase/client';
 import { getCardDisplayName } from '@/lib/card-display';
+import PopularCards from '@/components/PopularCards';
 
 export default function CardsPage() {
   const [cards, setCards] = useState<Card[]>([]);
@@ -159,6 +160,14 @@ export default function CardsPage() {
   return (
     <main className="min-h-screen p-8">
       <div className="max-w-6xl mx-auto">
+        {/* Popular Cards Section */}
+        <div className="mb-12">
+          <PopularCards limit={12} showFilters={false} />
+        </div>
+
+        {/* Divider */}
+        <div className="border-t border-gray-200 dark:border-gray-700 my-12"></div>
+
         <div className="mb-6">
           <h1 className="text-3xl font-bold mb-4">Card Browser</h1>
           
