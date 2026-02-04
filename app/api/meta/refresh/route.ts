@@ -88,6 +88,14 @@ export async function POST(request: NextRequest) {
 
 // GET handler for status check
 export async function GET(request: NextRequest) {
+  // Skip during build time
+  if (process.env.NEXT_PHASE === 'phase-production-build') {
+    return NextResponse.json({
+      success: true,
+      message: 'Build time - skipping execution'
+    });
+  }
+
   try {
     // Verify authentication for GET as well
     const authHeader = request.headers.get('authorization');
