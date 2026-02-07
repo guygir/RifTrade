@@ -9,37 +9,33 @@ on:
 jobs:
   refresh-meta-data:
     runs-on: ubuntu-latest
-    timeout-minutes: 5  # 5 minutes should be plenty
+    timeout-minutes: 10  # 10 minutes for full aggregation
     
     steps:
-      - name: Trigger Meta Data Refresh
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run meta data aggregation
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
-          echo "Triggering meta data refresh..."
-          
-          response=$(curl -X POST https://rif-trade.vercel.app/api/meta/refresh \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            -H "Content-Type: application/json" \
-            --max-time 120 \
-            --write-out "\n%{http_code}" \
-            --silent \
-            --show-error)
-          
-          http_code=$(echo "$response" | tail -n1)
-          body=$(echo "$response" | sed '$d')
-          
-          echo "HTTP Status: $http_code"
-          echo "Response: $body"
-          
-          if [ "$http_code" -ne 200 ]; then
-            echo "Error: Meta refresh failed with status $http_code"
-            exit 1
-          fi
-          
+          echo "Starting meta data aggregation..."
+          npx tsx scripts/run-aggregation.ts
           echo "Meta data refresh completed successfully!"
 
       - name: Notify on Failure
         if: failure()
         run: |
-          echo "Meta data refresh failed. Check the logs above for details."
+          echo "❌ Meta data refresh failed. Check the logs above for details."
 
 # Made with Bob
