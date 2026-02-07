@@ -1,0 +1,45 @@
+name: Meta Data Refresh
+
+on:
+  schedule:
+    # Run daily at midnight UTC (2 AM Israel time)
+    - cron: '0 0 * * *'
+  workflow_dispatch:  # Allow manual trigger from GitHub Actions tab
+
+jobs:
+  refresh-meta-data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5  # 5 minutes should be plenty
+    
+    steps:
+      - name: Trigger Meta Data Refresh
+        run: |
+          echo "Triggering meta data refresh..."
+          
+          response=$(curl -X POST https://rif-trade.vercel.app/api/meta/refresh \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            --max-time 120 \
+            --write-out "\n%{http_code}" \
+            --silent \
+            --show-error)
+          
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+          
+          echo "HTTP Status: $http_code"
+          echo "Response: $body"
+          
+          if [ "$http_code" -ne 200 ]; then
+            echo "Error: Meta refresh failed with status $http_code"
+            exit 1
+          fi
+          
+          echo "Meta data refresh completed successfully!"
+
+      - name: Notify on Failure
+        if: failure()
+        run: |
+          echo "Meta data refresh failed. Check the logs above for details."
+
+# Made with Bob
