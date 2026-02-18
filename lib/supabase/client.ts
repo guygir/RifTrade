@@ -28,8 +28,10 @@ export function createSupabaseClient() {
   return supabaseClient;
 }
 
-// Server-side Supabase client (for API routes)
+// Server-side client moved to lib/supabase/server.ts to avoid importing 'next/headers' in client components
 export function createSupabaseServerClient() {
+  // This is a fallback for non-server contexts
+  // Use lib/supabase/server.ts for actual server-side usage
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 

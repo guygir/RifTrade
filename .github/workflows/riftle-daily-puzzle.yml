@@ -1,0 +1,46 @@
+name: Generate Daily Riftle Puzzle
+
+on:
+  schedule:
+    # Run at 3:30 AM UTC daily (generates puzzle for today + 3 days)
+    - cron: '30 3 * * *'
+  workflow_dispatch:
+    # Allow manual trigger with optional date parameter
+    inputs:
+      date:
+        description: 'Target date (YYYY-MM-DD) - leave empty for default (today + 3)'
+        required: false
+        type: string
+
+jobs:
+  generate-puzzle:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Generate puzzle
+        run: |
+          if [ -n "${{ github.event.inputs.date }}" ]; then
+            echo "Generating puzzle for specific date: ${{ github.event.inputs.date }}"
+            curl -X GET "${{ secrets.APP_URL }}/api/cron/riftle-daily?date=${{ github.event.inputs.date }}" \
+              -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+              -f -s -S -o response.json
+          else
+            echo "Generating puzzle for default date (today + 3)"
+            curl -X GET "${{ secrets.APP_URL }}/api/cron/riftle-daily" \
+              -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+              -f -s -S -o response.json
+          fi
+          
+          echo "Response:"
+          cat response.json
+          
+          # Check if response contains success
+          if grep -q '"success":true' response.json; then
+            echo "✅ Puzzle generated successfully"
+            exit 0
+          else
+            echo "❌ Puzzle generation failed"
+            exit 1
+          fi
+
+# Made with Bob
