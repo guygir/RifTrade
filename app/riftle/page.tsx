@@ -644,12 +644,44 @@ export default function RiftlePage() {
       }
       
       // Also mark in database if user is authenticated
+      // Use Supabase client directly instead of API call to avoid auth issues
       if (user) {
-        await fetch('/api/riftle/tutorial', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ step: showTutorial }),
-        });
+        const supabase = createSupabaseClient();
+        const updateField = showTutorial === 'intro' ? 'tutorial_seen_intro' : 'tutorial_seen_feedback';
+        
+        // Check if user_stats exists
+        const { data: existingStats } = await supabase
+          .from('user_stats')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        if (existingStats) {
+          // Update existing stats
+          await supabase
+            .from('user_stats')
+            .update({
+              [updateField]: true,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('user_id', user.id);
+        } else {
+          // Create new stats row with defaults
+          await supabase
+            .from('user_stats')
+            .insert({
+              user_id: user.id,
+              total_games: 0,
+              failed_games: 0,
+              current_streak: 0,
+              max_streak: 0,
+              total_score: 0,
+              average_guesses: 0,
+              solved_distribution: {},
+              [updateField]: true,
+              updated_at: new Date().toISOString(),
+            });
+        }
       }
     } catch (error) {
       console.error('Error marking tutorial as seen:', error);
