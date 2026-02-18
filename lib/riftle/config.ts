@@ -9,7 +9,7 @@ export const RIFTLE_CONFIG = {
    * Maximum number of guesses allowed per puzzle
    * Change this value to adjust difficulty
    */
-  MAX_GUESSES: 5,
+  MAX_GUESSES: 6,
   
   /**
    * Number of days to exclude recently used cards

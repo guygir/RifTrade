@@ -134,7 +134,11 @@ export function calculateScore(guessesUsed: number): number {
 
 /**
  * Select a random card for the daily puzzle
- * Excludes recently used cards (includes all card variants)
+ * Excludes:
+ * - Recently used cards (last 30 days)
+ * - Battlefield type cards
+ * - Foil variant cards
+ * - Signature cards
  */
 export async function selectRandomCard(
   supabase: ReturnType<typeof createSupabaseServerClient>,
@@ -152,22 +156,25 @@ export async function selectRandomCard(
   
   const excludedIds = recentCards?.map(r => r.card_id) || [];
   
-  // Get all cards (includes foil, alternate art, and all variants)
+  // Get eligible cards (excludes Battlefield, Foil, and Signature cards)
   const { data: cards, error } = await supabase
     .from("cards")
-    .select("id, name, metadata");
+    .select("id, name, metadata")
+    .neq('metadata->classification->>type', 'Battlefield')
+    .neq('metadata->>variant', 'foil')
+    .neq('metadata->metadata->>signature', 'true');
   
   if (error || !cards || cards.length === 0) {
     console.error('Error fetching cards for puzzle:', error);
     return null;
   }
   
-  // Filter out excluded cards
+  // Filter out recently used cards
   const eligibleCards = cards.filter(card => !excludedIds.includes(card.id));
   
   if (eligibleCards.length === 0) {
-    console.warn('No eligible cards found, using all cards');
-    // Fallback to all cards if no eligible ones
+    console.warn('No eligible cards found after excluding recent cards, using all eligible cards');
+    // Fallback to all eligible cards (still excluding Battlefield/Foil/Signature)
     return cards[Math.floor(Math.random() * cards.length)].id;
   }
   

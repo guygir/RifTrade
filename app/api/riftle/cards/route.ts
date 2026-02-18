@@ -19,10 +19,13 @@ export async function GET(request: NextRequest) {
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
-    // Get all cards (includes all variants - foil, alternate art, etc.)
+    // Get eligible cards (excludes Battlefield, Foil, and Signature cards)
     let queryBuilder = supabase
       .from('cards')
-      .select('id, name, set_code, collector_number, rarity')
+      .select('id, name, set_code, collector_number, rarity, metadata')
+      .neq('metadata->classification->>type', 'Battlefield')
+      .neq('metadata->>variant', 'foil')
+      .neq('metadata->metadata->>signature', 'true')
       .order('name');
     
     // If query provided, filter by name

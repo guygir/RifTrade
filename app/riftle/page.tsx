@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import { createSupabaseClient } from '@/lib/supabase/client';
 import { ATTRIBUTE_LABELS, ATTRIBUTE_TYPES, type AttributeFeedback, extractCardAttributes, generateFeedback, isCorrectGuess } from '@/lib/riftle/feedback';
 import { RIFTLE_CONFIG } from '@/lib/riftle/config';
@@ -177,6 +178,7 @@ export default function RiftlePage() {
             set_code,
             collector_number,
             rarity,
+            image_url,
             metadata
           )
         `)
@@ -685,8 +687,21 @@ export default function RiftlePage() {
             <p className="text-center text-sm text-gray-600 dark:text-gray-400 mt-1">
               Time: {Math.floor(elapsedTime / 60)}:{(elapsedTime % 60).toString().padStart(2, '0')}
             </p>
-            {answer && (
-              <div className="mt-4 text-center">
+            {answer && puzzleCard && (
+              <div className="mt-4 flex flex-col items-center">
+                {/* Card Image */}
+                {puzzleCard.image_url && (
+                  <div className="relative w-48 aspect-[63/88] mb-3 bg-gray-100 dark:bg-gray-700 rounded overflow-hidden">
+                    <Image
+                      src={`/api/image-proxy?url=${encodeURIComponent(puzzleCard.image_url)}`}
+                      alt={answer.name}
+                      fill
+                      className="rounded object-contain"
+                      sizes="192px"
+                      unoptimized
+                    />
+                  </div>
+                )}
                 <p className="font-semibold">{answer.name}</p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   {answer.set_code} #{answer.collector_number} • {answer.rarity}
@@ -701,16 +716,23 @@ export default function RiftlePage() {
           <div>
             <h3 className="font-semibold mb-3">Your Guesses:</h3>
             <div className="space-y-3">
-              {[...guessHistory].reverse().map((guess, index) => (
-                <div key={index} className="border border-gray-300 dark:border-gray-600 rounded-lg p-3">
-                  <div className="font-semibold mb-2">
-                    {guess.card_name}
-                    {guess.set_code && guess.collector_number && (
-                      <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">
-                        {guess.set_code} #{guess.collector_number}
+              {[...guessHistory].reverse().map((guess, index) => {
+                const guessNumber = guessHistory.length - index;
+                return (
+                  <div key={index} className="border border-gray-300 dark:border-gray-600 rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-sm font-bold text-gray-500 dark:text-gray-400">
+                        Guess #{guessNumber}:
                       </span>
-                    )}
-                  </div>
+                      <span className="font-semibold">
+                        {guess.card_name}
+                      </span>
+                      {guess.set_code && guess.collector_number && (
+                        <span className="text-sm text-gray-500 dark:text-gray-400">
+                          {guess.set_code} #{guess.collector_number}
+                        </span>
+                      )}
+                    </div>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                     {Object.entries(guess.feedback).map(([attr, feedback]) => {
                       const attrKey = attr as keyof AttributeFeedback;
@@ -738,16 +760,21 @@ export default function RiftlePage() {
                     })}
                   </div>
                 </div>
-              ))}
+              );
+            })}
             </div>
           </div>
         )}
       </div>
       
-      {/* Stats Section */}
-      {user && stats && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
+      {/* Stats and Leaderboard Side by Side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Stats Section */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
           <h2 className="text-2xl font-bold mb-4">Your Stats</h2>
+          
+          {user && stats ? (
+            <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
             <div className="text-center">
               <div className="text-3xl font-bold">{stats.totalGames}</div>
@@ -770,13 +797,14 @@ export default function RiftlePage() {
           {/* Guess Distribution - Vertical Bar Chart */}
           <div className="mt-4">
             <h3 className="font-semibold mb-2">Guess Distribution</h3>
-            <div className="flex items-end justify-center gap-3" style={{ height: '256px' }}>
+            <div className="flex items-end justify-center gap-2 h-32">
               {[
                 { label: '1', value: 1 },
                 { label: '2', value: 2 },
                 { label: '3', value: 3 },
                 { label: '4', value: 4 },
                 { label: '5', value: 5 },
+                { label: '6', value: 6 },
                 { label: 'Failed', value: 'X' }
               ].map(({ label, value }) => {
                 const count = value === 'X' ? stats.failedGames : (stats.solvedDistribution[value as number] || 0);
@@ -785,36 +813,48 @@ export default function RiftlePage() {
                   stats.failedGames || 0,
                   1 // Ensure at least 1 to avoid division by zero
                 );
-                const heightPx = maxCount > 0 ? (count / maxCount) * 256 : 0;
+                // Calculate height in pixels relative to the 128px (h-32) container
+                const heightPx = maxCount > 0 ? Math.round((count / maxCount) * 120) : 0; // 120px max to leave room for label
                 const bgColor = value === 'X' ? 'bg-red-600' : 'bg-green-600';
                 
                 return (
-                  <div key={label} className="flex flex-col items-center flex-1 min-w-[50px]">
-                    <div className="flex flex-col justify-end items-center w-full" style={{ height: '256px' }}>
-                      {count > 0 && (
-                        <div
-                          className={`${bgColor} text-white text-sm font-bold rounded-t w-full flex items-center justify-center transition-all`}
-                          style={{ height: `${heightPx}px` }}
-                        >
-                          {count}
-                        </div>
-                      )}
-                    </div>
-                    <div className="text-sm font-semibold mt-2">{label}</div>
+                  <div key={label} className="flex flex-col items-center flex-1 min-w-[40px]">
+                    {count > 0 && (
+                      <div
+                        className={`${bgColor} text-white text-xs font-bold rounded-t w-full flex items-center justify-center transition-all`}
+                        style={{ height: `${heightPx}px` }}
+                      >
+                        {count}
+                      </div>
+                    )}
+                    <div className="text-xs font-semibold mt-1">{label}</div>
                   </div>
                 );
               })}
             </div>
           </div>
+            </>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-lg text-gray-600 dark:text-gray-400 mb-4">
+                Sign in to track your stats and compete on the leaderboard!
+              </p>
+              <a
+                href="/login"
+                className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors"
+              >
+                Sign In
+              </a>
+            </div>
+          )}
         </div>
-      )}
-      
-      {/* Leaderboard Section - Today Only */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-        <h2 className="text-2xl font-bold mb-4">Today's Leaderboard</h2>
         
-        {/* Leaderboard Table */}
-        <div className="overflow-x-auto">
+        {/* Leaderboard Section - Top 5 Today */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+          <h2 className="text-2xl font-bold mb-4">Today's Top 5</h2>
+          
+          {/* Leaderboard Table */}
+          <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-300 dark:border-gray-600">
@@ -833,7 +873,7 @@ export default function RiftlePage() {
                   </td>
                 </tr>
               ) : (
-                leaderboard.map((entry) => (
+                leaderboard.slice(0, 5).map((entry) => (
                   <tr
                     key={entry.rank}
                     className={`border-b border-gray-200 dark:border-gray-700 ${
@@ -856,6 +896,7 @@ export default function RiftlePage() {
               )}
             </tbody>
           </table>
+          </div>
         </div>
       </div>
     </div>
