@@ -1,7 +1,29 @@
+'use client';
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { createSupabaseClient } from "@/lib/supabase/client";
 import PopularDecksByTier from "@/components/PopularDecksByTier";
 
 export default function Home() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  const checkAuth = async () => {
+    try {
+      const supabase = createSupabaseClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsAuthenticated(!!user);
+    } catch (err: any) {
+      if (err?.name !== 'AbortError' && !err?.message?.includes('AbortError')) {
+        console.error('Error checking auth:', err);
+      }
+    }
+  };
+
   return (
     <main className="min-h-screen p-8">
       <div className="max-w-7xl mx-auto">
@@ -18,33 +40,45 @@ export default function Home() {
         </div>
 
         <nav className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12">
-          <Link 
-            href="/cards" 
+          <Link
+            href="/cards"
             className="p-6 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
             <h2 className="text-xl font-semibold mb-2">Browse Cards</h2>
             <p className="text-gray-600 dark:text-gray-400">View all available Riftbound cards</p>
           </Link>
-          <Link 
-            href="/search" 
+          <Link
+            href="/search"
             className="p-6 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
             <h2 className="text-xl font-semibold mb-2">Search & Match</h2>
             <p className="text-gray-600 dark:text-gray-400">Find users who have cards you want</p>
           </Link>
-          <Link 
-            href="/profile" 
+          {isAuthenticated ? (
+            <Link
+              href="/profile"
+              className="p-6 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            >
+              <h2 className="text-xl font-semibold mb-2">My Profile</h2>
+              <p className="text-gray-600 dark:text-gray-400">Manage your have/want lists</p>
+            </Link>
+          ) : (
+            <Link
+              href="/login"
+              className="p-6 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            >
+              <h2 className="text-xl font-semibold mb-2">Login / Sign Up</h2>
+              <p className="text-gray-600 dark:text-gray-400">Create an account to get started</p>
+            </Link>
+          )}
+          <Link
+            href="/riftle"
             className="p-6 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
-            <h2 className="text-xl font-semibold mb-2">My Profile</h2>
-            <p className="text-gray-600 dark:text-gray-400">Manage your have/want lists</p>
-          </Link>
-          <Link 
-            href="/login" 
-            className="p-6 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-          >
-            <h2 className="text-xl font-semibold mb-2">Login / Sign Up</h2>
-            <p className="text-gray-600 dark:text-gray-400">Create an account to get started</p>
+            <h2 className="text-xl font-semibold mb-2">
+              🎮 Riftle <span className="text-red-600 dark:text-red-400">(NEW!)</span>
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400">Daily Riftbound wordle puzzle!</p>
           </Link>
         </nav>
 
@@ -67,6 +101,7 @@ export default function Home() {
             <div>
               <p className="font-semibold text-gray-900 dark:text-white">February 2026</p>
               <ul className="list-disc list-inside mt-2 space-y-1 text-gray-600 dark:text-gray-400 ml-4">
+                <li><strong>Riftle: Daily Riftbound puzzle, Wordle style!</strong> - Guess the daily card in 6 tries with attribute-based feedback</li>
                 <li><strong>Popular Decks & Cards feature</strong> - View meta decks by tier and most-played cards with automatic daily updates</li>
                 <li>Tier-weighted card statistics with Selling/Buying indicators across all users</li>
                 <li>Collapsible sections for better page organization</li>

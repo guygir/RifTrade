@@ -51,6 +51,7 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 
 ## Features
 
+- **Riftle** - Daily Riftbound card puzzle game (Wordle-style)
 - Card database synced from Riftcodex API
 - User profiles with have/want card lists
 - Tag system for organizing cards (Important, Question, Urgent, Price)
@@ -59,6 +60,7 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 - Download card lists as text files
 - Simple email/password authentication
 - Dark mode support
+- Popular Decks & Cards with meta statistics
 
 ## Legal
 

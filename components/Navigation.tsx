@@ -90,6 +90,9 @@ export default function Navigation() {
             RifTrade - Riftbound Card Swap
           </Link>
           <div className="flex gap-4 items-center">
+            <Link href="/riftle" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
+              Riftle
+            </Link>
             <Link href="/cards" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
               Cards
             </Link>

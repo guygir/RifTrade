@@ -83,6 +83,9 @@ export default function RiftlePage() {
   const [justSelected, setJustSelected] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   
+  // Track copy button state
+  const [copied, setCopied] = useState(false);
+  
   // Load user on mount
   useEffect(() => {
     loadUser();
@@ -711,6 +714,55 @@ export default function RiftlePage() {
           </div>
         )}
         
+        {/* Share Button */}
+        {gameOver && (
+          <div className="mb-6 flex justify-center">
+            <button
+              onClick={() => {
+                const date = puzzleDate || new Date().toISOString().split('T')[0];
+                const result = won ? 'Won' : 'Failed';
+                const guessCount = guessHistory.length;
+                
+                // Generate emoji grid for each guess
+                // Order: Type, Faction, Rarity, Energy, Might, Power
+                const emojiGrid = guessHistory.map((guess, idx) => {
+                  const attributeOrder: (keyof AttributeFeedback)[] = ['type', 'faction', 'rarity', 'energy', 'might', 'power'];
+                  const emojis = attributeOrder.map((attr) => {
+                    const feedback = guess.feedback[attr];
+                    const type = ATTRIBUTE_TYPES[attr];
+                    
+                    if (type === 'categorical') {
+                      return feedback === 'correct' ? '🟩' : '🟥';
+                    } else {
+                      // numeric
+                      if (feedback === 'exact') return '🟩';
+                      if (feedback === 'high') return '🟧';
+                      return '🟦';
+                    }
+                  });
+                  return emojis.join('');
+                }).join('\n');
+                
+                const shareText = `Riftle\n${date}\nI ${result}, using ${guessCount}/${maxGuesses} guesses.\n${emojiGrid}\n\nVisit https://rif-trade.vercel.app/riftle for daily Riftbound puzzles!`;
+                
+                navigator.clipboard.writeText(shareText).then(() => {
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 1000);
+                }).catch(() => {
+                  alert('Failed to copy to clipboard');
+                });
+              }}
+              className={`px-6 py-2 font-semibold rounded-lg transition-colors w-40 ${
+                copied
+                  ? 'bg-green-600 text-white'
+                  : 'bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-400 dark:hover:bg-gray-500'
+              }`}
+            >
+              {copied ? 'Copied!' : 'Share Results'}
+            </button>
+          </div>
+        )}
+        
         {/* Guess History */}
         {guessHistory.length > 0 && (
           <div>
@@ -733,31 +785,53 @@ export default function RiftlePage() {
                         </span>
                       )}
                     </div>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                    {Object.entries(guess.feedback).map(([attr, feedback]) => {
-                      const attrKey = attr as keyof AttributeFeedback;
-                      const type = ATTRIBUTE_TYPES[attrKey];
-                      const color = getFeedbackColor(feedback as string, type);
-                      
-                      // Get the actual value from attributes (already normalized in feedback.ts)
-                      const displayValue = guess.attributes[attr] ?? 'N/A';
-                      
-                      return (
-                        <div key={attr} className="text-center">
-                          <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-                            {ATTRIBUTE_LABELS[attrKey]}
+                  <div className="space-y-2">
+                    {/* Categorical attributes (top row) */}
+                    <div className="grid grid-cols-3 gap-2">
+                      {(['type', 'faction', 'rarity'] as const).map((attr) => {
+                        const feedback = guess.feedback[attr];
+                        const type = ATTRIBUTE_TYPES[attr];
+                        const color = getFeedbackColor(feedback as string, type);
+                        const displayValue = guess.attributes[attr] ?? 'N/A';
+                        
+                        return (
+                          <div key={attr} className="text-center">
+                            <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
+                              {ATTRIBUTE_LABELS[attr]}
+                            </div>
+                            <div className={`${color} text-white rounded px-2 py-1 text-sm font-semibold`}>
+                              {displayValue}
+                            </div>
                           </div>
-                          <div className={`${color} text-white rounded px-2 py-1 text-sm font-semibold`}>
-                            {displayValue}
-                            {type === 'numeric' && feedback !== 'exact' && (
-                              <span className="ml-1">
-                                {feedback === 'high' ? '↓' : '↑'}
-                              </span>
-                            )}
+                        );
+                      })}
+                    </div>
+                    
+                    {/* Numerical attributes (bottom row) */}
+                    <div className="grid grid-cols-3 gap-2">
+                      {(['energy', 'might', 'power'] as const).map((attr) => {
+                        const feedback = guess.feedback[attr];
+                        const type = ATTRIBUTE_TYPES[attr];
+                        const color = getFeedbackColor(feedback as string, type);
+                        const displayValue = guess.attributes[attr] ?? 'N/A';
+                        
+                        return (
+                          <div key={attr} className="text-center">
+                            <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
+                              {ATTRIBUTE_LABELS[attr]}
+                            </div>
+                            <div className={`${color} text-white rounded px-2 py-1 text-sm font-semibold`}>
+                              {displayValue}
+                              {type === 'numeric' && feedback !== 'exact' && (
+                                <span className="ml-1">
+                                  {feedback === 'high' ? '↓' : '↑'}
+                                </span>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               );
