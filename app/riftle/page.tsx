@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { createSupabaseClient } from '@/lib/supabase/client';
 import { ATTRIBUTE_LABELS, ATTRIBUTE_TYPES, type AttributeFeedback, extractCardAttributes, generateFeedback, isCorrectGuess } from '@/lib/riftle/feedback';
 import { RIFTLE_CONFIG } from '@/lib/riftle/config';
+import RiftleTutorial from '@/components/RiftleTutorial';
 
 interface Card {
   id: string;
@@ -86,10 +87,24 @@ export default function RiftlePage() {
   // Track copy button state
   const [copied, setCopied] = useState(false);
   
+  // Tutorial state
+  const [showTutorial, setShowTutorial] = useState<'intro' | 'feedback' | null>(null);
+  const [tutorialSeenIntro, setTutorialSeenIntro] = useState(false);
+  const [tutorialSeenFeedback, setTutorialSeenFeedback] = useState(false);
+  
   // Load user on mount
   useEffect(() => {
     loadUser();
+    // Load tutorial flags from localStorage for anonymous users
+    loadTutorialFlags();
   }, []);
+  
+  // Check tutorial flags when loading finishes
+  useEffect(() => {
+    if (!loading && !tutorialSeenIntro && guessHistory.length === 0) {
+      setShowTutorial('intro');
+    }
+  }, [loading, tutorialSeenIntro, guessHistory.length]);
   
   // Load puzzle and stats when user changes (or is confirmed as null)
   useEffect(() => {
@@ -156,6 +171,18 @@ export default function RiftlePage() {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
+  
+  function loadTutorialFlags() {
+    // Load tutorial flags from localStorage for anonymous users
+    try {
+      const seenIntro = localStorage.getItem('riftle_tutorial_seen_intro') === 'true';
+      const seenFeedback = localStorage.getItem('riftle_tutorial_seen_feedback') === 'true';
+      setTutorialSeenIntro(seenIntro);
+      setTutorialSeenFeedback(seenFeedback);
+    } catch (error) {
+      console.error('Error loading tutorial flags from localStorage:', error);
+    }
+  }
   
   async function loadUser() {
     const supabase = createSupabaseClient();
@@ -340,6 +367,11 @@ export default function RiftlePage() {
       setSelectedCard(null);
       setSuggestions([]);
       
+      // Show feedback tutorial after first guess if user hasn't seen it (works for both authenticated and anonymous)
+      if (newGuessesUsed === 1 && !tutorialSeenFeedback) {
+        setTimeout(() => setShowTutorial('feedback'), 500);
+      }
+      
       // Reload leaderboard if game over
       if (isGameOver) {
         setTimeout(() => loadLeaderboard(), 500);
@@ -429,6 +461,24 @@ export default function RiftlePage() {
       if (statsError) {
         console.error('Error fetching user stats:', statsError);
         return;
+      }
+      
+      // Load tutorial flags
+      if (statsData) {
+        setTutorialSeenIntro(statsData.tutorial_seen_intro || false);
+        setTutorialSeenFeedback(statsData.tutorial_seen_feedback || false);
+        
+        // Show intro tutorial if user hasn't seen it and hasn't played yet
+        if (!statsData.tutorial_seen_intro && statsData.total_games === 0 && !loading) {
+          setShowTutorial('intro');
+        }
+      } else {
+        // New user - show intro tutorial
+        setTutorialSeenIntro(false);
+        setTutorialSeenFeedback(false);
+        if (!loading) {
+          setShowTutorial('intro');
+        }
       }
       
       // Get recent games
@@ -577,6 +627,37 @@ export default function RiftlePage() {
     }
   }
   
+  async function handleTutorialClose() {
+    if (!showTutorial) {
+      setShowTutorial(null);
+      return;
+    }
+    
+    try {
+      // Update local state
+      if (showTutorial === 'intro') {
+        setTutorialSeenIntro(true);
+        localStorage.setItem('riftle_tutorial_seen_intro', 'true');
+      } else if (showTutorial === 'feedback') {
+        setTutorialSeenFeedback(true);
+        localStorage.setItem('riftle_tutorial_seen_feedback', 'true');
+      }
+      
+      // Also mark in database if user is authenticated
+      if (user) {
+        await fetch('/api/riftle/tutorial', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ step: showTutorial }),
+        });
+      }
+    } catch (error) {
+      console.error('Error marking tutorial as seen:', error);
+    }
+    
+    setShowTutorial(null);
+  }
+  
   function getFeedbackColor(feedback: string, type: 'categorical' | 'numeric'): string {
     if (type === 'categorical') {
       return feedback === 'correct' ? 'bg-green-500' : 'bg-red-500';
@@ -598,6 +679,14 @@ export default function RiftlePage() {
   
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
+      {/* Tutorial Overlay */}
+      {showTutorial && (
+        <RiftleTutorial
+          step={showTutorial}
+          onClose={handleTutorialClose}
+        />
+      )}
+      
       {/* Header */}
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold mb-2">Riftle</h1>
