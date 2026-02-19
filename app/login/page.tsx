@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createSupabaseClient } from '@/lib/supabase/client';
 import { sanitizeDisplayName, sanitizeContactInfo, sanitizeUsername } from '@/lib/sanitize-input';
+import { detectCountry, isTradingAllowed, getCountryDisplayText } from '@/lib/geo-utils';
+import RegionalWarningModal from '@/components/RegionalWarningModal';
 
 export default function LoginPage() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -16,6 +18,9 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [showRegionalWarning, setShowRegionalWarning] = useState(false);
+  const [detectedCountryCode, setDetectedCountryCode] = useState<string | null>(null);
+  const [detectedCountryName, setDetectedCountryName] = useState<string | null>(null);
   const router = useRouter();
 
   // Validate username format: alphanumeric, underscore, hyphen, 3-30 chars
@@ -71,6 +76,29 @@ export default function LoginPage() {
     }
   };
 
+  // Detect country when switching to signup mode
+  useEffect(() => {
+    if (isSignUp && !detectedCountryCode) {
+      console.log('[LoginPage] Signup mode activated, detecting country...');
+      detectUserCountry();
+    }
+  }, [isSignUp, detectedCountryCode]);
+
+  const detectUserCountry = async () => {
+    try {
+      console.log('[LoginPage] Calling detectCountry API...');
+      const { code, name } = await detectCountry();
+      console.log('[LoginPage] Country detected:', { code, name });
+      setDetectedCountryCode(code);
+      setDetectedCountryName(name);
+    } catch (error) {
+      console.error('[LoginPage] Error detecting country:', error);
+      // Set to null on error (will be treated as non-Israel)
+      setDetectedCountryCode(null);
+      setDetectedCountryName(null);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -113,12 +141,18 @@ export default function LoginPage() {
         if (error) throw error;
 
         if (data.user) {
+          // Detect user's country
+          const { code: countryCode, name: countryName } = await detectCountry();
+          setDetectedCountryCode(countryCode);
+          setDetectedCountryName(countryName);
+          const tradingEnabled = isTradingAllowed(countryCode);
+          
           // Sanitize inputs before saving
           const sanitizedUsername = sanitizeUsername(username);
           const sanitizedDisplayName = sanitizeDisplayName(username); // Default to username, can be changed later
           const sanitizedContactInfo = sanitizeContactInfo(email); // Default to email, can be changed later
           
-          // Create profile with username (lowercase for consistency)
+          // Create profile with username and geographic info
           const { error: profileError } = await supabase
             .from('profiles')
             .insert({
@@ -126,6 +160,8 @@ export default function LoginPage() {
               display_name: sanitizedDisplayName,
               contact_info: sanitizedContactInfo,
               username: sanitizedUsername,
+              country: countryCode,
+              is_trading_enabled: tradingEnabled,
             });
 
           if (profileError) {
@@ -135,11 +171,17 @@ export default function LoginPage() {
             return;
           }
 
-          setMessage('Account created! Redirecting to your profile...');
-          setTimeout(() => {
-            router.push('/profile');
-            router.refresh();
-          }, 1000);
+          // Show regional warning for non-trading users
+          if (!tradingEnabled) {
+            setShowRegionalWarning(true);
+            setMessage('Account created! Welcome to Riftle!');
+          } else {
+            setMessage('Account created! Redirecting to your profile...');
+            setTimeout(() => {
+              router.push('/profile');
+              router.refresh();
+            }, 1000);
+          }
         }
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -161,13 +203,38 @@ export default function LoginPage() {
     }
   };
 
+  const handleWarningClose = () => {
+    setShowRegionalWarning(false);
+    // Redirect to Riftle instead of profile for non-trading users
+    router.push('/riftle');
+    router.refresh();
+  };
+
   return (
     <main className="min-h-screen flex items-center justify-center p-8">
+      {showRegionalWarning && <RegionalWarningModal onClose={handleWarningClose} />}
       <div className="w-full max-w-md">
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-8 shadow-sm">
-          <h1 className="text-2xl font-bold mb-6">
+          <h1 className="text-2xl font-bold mb-2">
             {isSignUp ? 'Sign Up' : 'Login'}
           </h1>
+          
+          {/* Country Detection Display for Signup */}
+          {isSignUp && (detectedCountryCode || detectedCountryName) && (
+            <div className="mb-6 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
+              <p className="text-sm text-blue-800 dark:text-blue-200">
+                📍 You're signing up from: {getCountryDisplayText(detectedCountryCode, detectedCountryName)}
+              </p>
+            </div>
+          )}
+          
+          {isSignUp && !detectedCountryCode && !detectedCountryName && (
+            <div className="mb-6 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                📍 Detecting your location...
+              </p>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>

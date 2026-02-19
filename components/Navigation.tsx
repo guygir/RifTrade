@@ -9,6 +9,7 @@ import ThemeToggle from './ThemeToggle';
 export default function Navigation() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [username, setUsername] = useState<string | null>(null);
+  const [isTradingEnabled, setIsTradingEnabled] = useState(true);
 
   useEffect(() => {
     checkAuth();
@@ -48,13 +49,16 @@ export default function Navigation() {
       const supabase = createSupabaseClient();
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('username')
+        .select('username, is_trading_enabled')
         .eq('user_id', userId)
         .single();
       
       if (profileData?.username) {
         setUsername(profileData.username);
       }
+      
+      // Set trading enabled status (default to true for existing users without the field)
+      setIsTradingEnabled(profileData?.is_trading_enabled ?? true);
     } catch (err: any) {
       // Ignore AbortError - it's expected when component unmounts or React Strict Mode double-renders
       if (err?.name === 'AbortError' || err?.message?.includes('AbortError')) {
@@ -93,17 +97,24 @@ export default function Navigation() {
             <Link href="/riftle" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
               Riftle
             </Link>
-            <Link href="/cards" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
-              Cards
-            </Link>
-            <Link href="/search" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
-              Search
-            </Link>
-            {isAuthenticated && <NotificationBell />}
+            {/* Only show trading features for users with trading enabled */}
+            {isTradingEnabled && (
+              <>
+                <Link href="/cards" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
+                  Cards
+                </Link>
+                <Link href="/search" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
+                  Search
+                </Link>
+              </>
+            )}
+            {isAuthenticated && isTradingEnabled && <NotificationBell />}
             {isAuthenticated ? (
-              <Link href="/profile" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
-                Profile
-              </Link>
+              isTradingEnabled ? (
+                <Link href="/profile" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
+                  Profile
+                </Link>
+              ) : null
             ) : (
               <Link href="/login" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
                 Login

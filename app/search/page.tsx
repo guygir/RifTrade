@@ -7,6 +7,7 @@ import { Card, Profile } from '@/lib/supabase/types';
 import { createSupabaseClient } from '@/lib/supabase/client';
 import { getCardDisplayName } from '@/lib/card-display';
 import { sanitizeText, sanitizeContactInfo } from '@/lib/sanitize';
+import { useTradingPermission } from '@/lib/hooks/useTradingPermission';
 
 interface SearchResult {
   profile: Profile;
@@ -17,6 +18,8 @@ interface SearchResult {
 }
 
 export default function SearchPage() {
+  const router = useRouter();
+  const { isLoading: permissionLoading, isTradingEnabled } = useTradingPermission();
   const [allCards, setAllCards] = useState<Card[]>([]);
   const [selectedHaveCards, setSelectedHaveCards] = useState<string[]>([]);
   const [selectedWantCards, setSelectedWantCards] = useState<string[]>([]);
@@ -30,11 +33,19 @@ export default function SearchPage() {
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
   const [hasAutoSearched, setHasAutoSearched] = useState(false);
-  const router = useRouter();
 
   useEffect(() => {
-    loadCardsAndProfile();
-  }, []);
+    // Redirect if trading is not enabled
+    if (!permissionLoading && !isTradingEnabled) {
+      router.push('/riftle');
+    }
+  }, [permissionLoading, isTradingEnabled, router]);
+
+  useEffect(() => {
+    if (isTradingEnabled) {
+      loadCardsAndProfile();
+    }
+  }, [isTradingEnabled]);
 
   const loadCardsAndProfile = async () => {
     const supabase = createSupabaseClient();

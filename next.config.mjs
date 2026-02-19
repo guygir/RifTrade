@@ -70,7 +70,7 @@ const nextConfig = {
             "script-src 'self' 'unsafe-eval' 'unsafe-inline'", // Next.js needs unsafe-eval in dev, unsafe-inline for inline scripts
             "style-src 'self' 'unsafe-inline'", // Tailwind CSS needs unsafe-inline
             "img-src 'self' data: https:", // Allow images from same origin, data URIs, and HTTPS URLs for card images
-            "connect-src 'self' https://*.supabase.co", // Allow API calls to Supabase
+            "connect-src 'self' https://*.supabase.co https://ipapi.co", // Allow API calls to Supabase and ipapi.co for geo detection
             "frame-ancestors 'none'", // Prevent embedding (same as X-Frame-Options but more modern
           ].join('; '),
         },

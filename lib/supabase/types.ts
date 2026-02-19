@@ -19,6 +19,8 @@ export type Profile = {
   display_name: string;
   contact_info: string;
   trading_locations: string | null;
+  country: string | null;
+  is_trading_enabled: boolean;
   created_at: string;
   updated_at: string;
 };

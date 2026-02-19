@@ -9,6 +9,7 @@ import { getCardDisplayName } from '@/lib/card-display';
 import { detectAndStoreMatches } from '@/lib/match-storage';
 import { sanitizeDisplayName, sanitizeContactInfo, sanitizeTradingLocations, sanitizeUsername } from '@/lib/sanitize-input';
 import { generateCardListPDF, generateCardListPNG, generateCardListTextFile, CardForExport } from '@/lib/pdf-export';
+import { useTradingPermission } from '@/lib/hooks/useTradingPermission';
 
 const TAG_OPTIONS = [
   { value: null, label: 'None', emoji: '' },
@@ -25,6 +26,8 @@ const TAG_FILTER_OPTIONS = [
 ];
 
 export default function ProfilePage() {
+  const router = useRouter();
+  const { isLoading: permissionLoading, isTradingEnabled } = useTradingPermission();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [haveCards, setHaveCards] = useState<Array<Card & { quantity: number; tag: string | null; relationId: string }>>([]);
   const [wantCards, setWantCards] = useState<Array<Card & { quantity: number; tag: string | null; relationId: string }>>([]);
@@ -47,11 +50,19 @@ export default function ProfilePage() {
   const [downloadingWantList, setDownloadingWantList] = useState(false);
   const [pdfProgress, setPdfProgress] = useState(0);
   const [pngProgress, setPngProgress] = useState(0);
-  const router = useRouter();
 
   useEffect(() => {
-    checkAuthAndLoad();
-  }, []);
+    // Redirect if trading is not enabled
+    if (!permissionLoading && !isTradingEnabled) {
+      router.push('/riftle');
+    }
+  }, [permissionLoading, isTradingEnabled, router]);
+
+  useEffect(() => {
+    if (isTradingEnabled) {
+      checkAuthAndLoad();
+    }
+  }, [isTradingEnabled]);
 
   const checkAuthAndLoad = async () => {
     try {

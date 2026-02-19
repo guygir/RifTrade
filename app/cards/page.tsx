@@ -1,13 +1,18 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import Link from 'next/link';
 import { Card } from '@/lib/supabase/types';
 import { createSupabaseClient } from '@/lib/supabase/client';
 import { getCardDisplayName } from '@/lib/card-display';
 import PopularCards from '@/components/PopularCards';
+import { useTradingPermission } from '@/lib/hooks/useTradingPermission';
 
 export default function CardsPage() {
+  const router = useRouter();
+  const { isLoading: permissionLoading, isTradingEnabled } = useTradingPermission();
   const [cards, setCards] = useState<Card[]>([]);
   const [userHaveCards, setUserHaveCards] = useState<Set<string>>(new Set());
   const [userWantCards, setUserWantCards] = useState<Set<string>>(new Set());
@@ -19,9 +24,18 @@ export default function CardsPage() {
   const [showUnowned, setShowUnowned] = useState(true);
 
   useEffect(() => {
-    loadCards();
-    loadUserCards();
-  }, []);
+    // Redirect if trading is not enabled
+    if (!permissionLoading && !isTradingEnabled) {
+      router.push('/riftle');
+    }
+  }, [permissionLoading, isTradingEnabled, router]);
+
+  useEffect(() => {
+    if (isTradingEnabled) {
+      loadCards();
+      loadUserCards();
+    }
+  }, [isTradingEnabled]);
 
   const loadCards = async () => {
     try {
