@@ -5,7 +5,9 @@ import Image from 'next/image';
 import { createSupabaseClient } from '@/lib/supabase/client';
 import { ATTRIBUTE_LABELS, ATTRIBUTE_TYPES, type AttributeFeedback, extractCardAttributes, generateFeedback, isCorrectGuess } from '@/lib/riftle/feedback';
 import { RIFTLE_CONFIG } from '@/lib/riftle/config';
+import { getCountryFlag } from '@/lib/geo-utils';
 import RiftleTutorial from '@/components/RiftleTutorial';
+import RiftleDailyPlaysChart from '@/components/RiftleDailyPlaysChart';
 
 interface Card {
   id: string;
@@ -45,6 +47,7 @@ interface Stats {
 interface LeaderboardEntry {
   rank: number;
   displayName: string;
+  countryFlag: string;
   isSolved?: boolean;
   guessesUsed?: number;
   timeInSeconds?: number;
@@ -567,12 +570,14 @@ export default function RiftlePage() {
         return;
       }
       
+      console.log('Raw entries from database:', allEntries?.length || 0, allEntries);
+      
       // Filter to only finished games (solved OR max guesses used)
       const entries = (allEntries || []).filter(entry =>
         entry.is_solved || entry.guesses_used >= maxGuesses
       );
       
-      console.log('Found finished entries:', entries?.length || 0, entries);
+      console.log('Filtered finished entries (solved OR >= maxGuesses):', entries?.length || 0, 'maxGuesses:', maxGuesses, entries);
       
       if (!entries || entries.length === 0) {
         console.log('No entries found - leaderboard will be empty');
@@ -583,15 +588,19 @@ export default function RiftlePage() {
       // Get user IDs
       const userIds = entries.map(e => e.user_id);
       
-      // Get profiles for these users
+      // Get profiles for these users (including country for flag)
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, user_id, display_name')
+        .select('id, user_id, display_name, username, country')
         .in('user_id', userIds);
       
-      // Create a map of user_id to display_name
+      // Create a map of user_id to display info (with fallback to username)
       const profileMap = new Map(
-        (profiles || []).map(p => [p.user_id, p.display_name])
+        (profiles || []).map(p => [p.user_id, {
+          displayName: p.display_name,
+          username: p.username,
+          country: p.country
+        }])
       );
       
       // Sort entries: wins first (by guesses, then time), then losses (by time)
@@ -613,14 +622,21 @@ export default function RiftlePage() {
         return a.time_taken_seconds - b.time_taken_seconds;
       });
       
-      // Format entries with rank and display names
-      const formattedEntries = sortedEntries.map((entry, index) => ({
-        rank: index + 1,
-        displayName: profileMap.get(entry.user_id) || 'No Display Name',
-        guessesUsed: entry.guesses_used,
-        timeInSeconds: entry.time_taken_seconds,
-        isSolved: entry.is_solved,
-      }));
+      // Format entries with rank, display names, and country flags
+      const formattedEntries = sortedEntries.map((entry, index) => {
+        const profile = profileMap.get(entry.user_id);
+        const displayName = profile?.displayName || profile?.username || 'Anonymous';
+        const countryFlag = getCountryFlag(profile?.country || null);
+        
+        return {
+          rank: index + 1,
+          displayName,
+          countryFlag,
+          guessesUsed: entry.guesses_used,
+          timeInSeconds: entry.time_taken_seconds,
+          isSolved: entry.is_solved,
+        };
+      });
       
       setLeaderboard(formattedEntries);
     } catch (error) {
@@ -1076,6 +1092,7 @@ export default function RiftlePage() {
             <thead>
               <tr className="border-b border-gray-300 dark:border-gray-600">
                 <th className="text-left py-2 px-2">Rank</th>
+                <th className="text-center py-2 px-2"></th>
                 <th className="text-left py-2 px-2">Player</th>
                 <th className="text-center py-2 px-2">Solved</th>
                 <th className="text-center py-2 px-2">Guesses</th>
@@ -1085,7 +1102,7 @@ export default function RiftlePage() {
             <tbody>
               {leaderboard.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="text-center py-8 text-gray-500">
+                  <td colSpan={6} className="text-center py-8 text-gray-500">
                     No entries yet. Be the first to play!
                   </td>
                 </tr>
@@ -1098,6 +1115,7 @@ export default function RiftlePage() {
                     }`}
                   >
                     <td className="py-2 px-2">{entry.rank}</td>
+                    <td className="text-center py-2 px-2 text-2xl">{entry.countryFlag}</td>
                     <td className="py-2 px-2 font-semibold">{entry.displayName}</td>
                     <td className="text-center py-2 px-2">
                       <span className={`font-bold ${entry.isSolved ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
@@ -1114,6 +1132,13 @@ export default function RiftlePage() {
             </tbody>
           </table>
           </div>
+        </div>
+      </div>
+      
+      {/* Daily Plays Chart - Full Width Below Stats and Leaderboard */}
+      <div className="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <div className="w-full min-h-[280px] flex justify-center items-center">
+          <RiftleDailyPlaysChart />
         </div>
       </div>
     </div>
