@@ -71,6 +71,18 @@ export default function RiftleTutorial({ step, onClose }: RiftleTutorialProps) {
                   </div>
                 </div>
 
+                <div className="flex items-center gap-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-3">
+                  <div className="w-12 h-12 bg-yellow-500 rounded flex items-center justify-center text-white font-bold text-xl">
+                    ~
+                  </div>
+                  <div>
+                    <p className="font-semibold text-yellow-900 dark:text-yellow-200">Yellow = Partial Match</p>
+                    <p className="text-sm text-yellow-800 dark:text-yellow-300">
+                      For Faction: Some domains match but not all (e.g., card has "Fury, Order" but target has only "Fury")
+                    </p>
+                  </div>
+                </div>
+
                 <div className="flex items-center gap-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-3">
                   <div className="w-12 h-12 bg-red-500 rounded flex items-center justify-center text-white font-bold text-xl">
                     ✗

@@ -709,7 +709,9 @@ export default function RiftlePage() {
   
   function getFeedbackColor(feedback: string, type: 'categorical' | 'numeric'): string {
     if (type === 'categorical') {
-      return feedback === 'correct' ? 'bg-green-500' : 'bg-red-500';
+      if (feedback === 'correct') return 'bg-green-500';
+      if (feedback === 'partial') return 'bg-yellow-500';
+      return 'bg-red-500';
     } else {
       if (feedback === 'exact') return 'bg-green-500';
       if (feedback === 'high') return 'bg-orange-500';
@@ -1139,6 +1141,28 @@ export default function RiftlePage() {
       <div className="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
         <div className="w-full min-h-[280px] flex justify-center items-center">
           <RiftleDailyPlaysChart />
+        </div>
+      </div>
+      
+      {/* Version Updates - Same width as chart */}
+      <div className="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <div className="flex items-center justify-center gap-2 mb-3">
+          <span className="text-2xl">📊</span>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            Latest Updates
+          </h3>
+        </div>
+        <div className="space-y-2 text-sm text-gray-700 dark:text-gray-300 text-center">
+          <div className="flex items-center justify-center gap-2">
+            <span className="font-semibold text-blue-600 dark:text-blue-400">v1.0</span>
+            <span>-</span>
+            <span>We're live!</span>
+          </div>
+          <div className="flex items-center justify-center gap-2">
+            <span className="font-semibold text-blue-600 dark:text-blue-400">v1.1</span>
+            <span>-</span>
+            <span>Champion unit type and double domain factions now supported</span>
+          </div>
         </div>
       </div>
     </div>

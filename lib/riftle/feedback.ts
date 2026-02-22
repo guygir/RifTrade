@@ -4,7 +4,7 @@
  * Handles attribute comparison and feedback generation for card guesses
  */
 
-export type CategoricalFeedback = "correct" | "wrong";
+export type CategoricalFeedback = "correct" | "wrong" | "partial";
 export type NumericFeedback = "exact" | "high" | "low";
 
 export interface CardAttributes {
@@ -44,12 +44,17 @@ export function extractCardAttributes(card: any): CardAttributes {
   }
   
   // Extract type from classification.type
-  const type = classification.type || null;
+  // For Champion cards: if type is "Unit" and supertype is "Champion", display as "Champion Unit"
+  let type = classification.type || null;
+  if (type === 'Unit' && classification.supertype === 'Champion') {
+    type = 'Champion Unit';
+  }
   
-  // Extract faction from classification.domain (it's an array, take first element)
+  // Extract faction from classification.domain (it's an array)
+  // Store as comma-separated string for multi-domain cards
   let faction: string | null = null;
   if (classification.domain && Array.isArray(classification.domain) && classification.domain.length > 0) {
-    faction = classification.domain[0];
+    faction = classification.domain.sort().join(', '); // Sort for consistent comparison
   }
   
   // Extract energy - treat null as 0
@@ -83,17 +88,48 @@ export function extractCardAttributes(card: any): CardAttributes {
 }
 
 /**
- * Get categorical feedback (correct/wrong)
+ * Get categorical feedback (correct/wrong/partial)
+ * Special handling for faction (domain) which can have multiple values
  */
 export function getCategoricalFeedback(
   guessed: string | null,
-  actual: string | null
+  actual: string | null,
+  attribute?: keyof AttributeFeedback
 ): CategoricalFeedback {
   // Normalize for comparison (case-insensitive, trim whitespace)
   const normalizedGuessed = (guessed || '').toLowerCase().trim();
   const normalizedActual = (actual || '').toLowerCase().trim();
   
-  return normalizedGuessed === normalizedActual ? "correct" : "wrong";
+  // Exact match
+  if (normalizedGuessed === normalizedActual) {
+    return "correct";
+  }
+  
+  // Special handling for faction (domain) - can be partial match
+  if (attribute === 'faction') {
+    // Split by comma to get individual domains
+    const guessedDomains = normalizedGuessed.split(',').map(d => d.trim()).filter(d => d);
+    const actualDomains = normalizedActual.split(',').map(d => d.trim()).filter(d => d);
+    
+    // If either is empty, it's wrong
+    if (guessedDomains.length === 0 || actualDomains.length === 0) {
+      return "wrong";
+    }
+    
+    // Count how many domains match
+    const matchCount = guessedDomains.filter(d => actualDomains.includes(d)).length;
+    
+    // If all domains match (and same count), it's correct (already handled above)
+    // If some domains match but not all, it's partial
+    if (matchCount > 0 && matchCount < Math.max(guessedDomains.length, actualDomains.length)) {
+      return "partial";
+    }
+    
+    // If no domains match, it's wrong
+    return "wrong";
+  }
+  
+  return "wrong";
 }
 
 /**
@@ -130,9 +166,9 @@ export function generateFeedback(
   
   // Order matters for UI layout: Type, Faction, Rarity, then Energy, Might, Power
   return {
-    type: getCategoricalFeedback(guessedAttrs.type, actualAttrs.type),
-    faction: getCategoricalFeedback(guessedAttrs.faction, actualAttrs.faction),
-    rarity: getCategoricalFeedback(guessedAttrs.rarity, actualAttrs.rarity),
+    type: getCategoricalFeedback(guessedAttrs.type, actualAttrs.type, 'type'),
+    faction: getCategoricalFeedback(guessedAttrs.faction, actualAttrs.faction, 'faction'),
+    rarity: getCategoricalFeedback(guessedAttrs.rarity, actualAttrs.rarity, 'rarity'),
     energy: getNumericFeedback(guessedAttrs.energy, actualAttrs.energy),
     might: getNumericFeedback(guessedAttrs.might, actualAttrs.might),
     power: getNumericFeedback(guessedAttrs.power, actualAttrs.power),

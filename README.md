@@ -66,3 +66,33 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 
 This is an unofficial app. It does not facilitate or guarantee trades. All trades happen externally between users.
 
+## Changelog
+
+### v1.1.0 (2026-02-22)
+- **Riftle Enhancements:**
+  - Added Champion Unit type classification (cards with `supertype: "Champion"` now display as "Champion Unit")
+  - Implemented multi-domain faction matching with partial feedback (yellow color)
+  - Order-independent domain matching (e.g., "Fury, Order" matches "Order, Fury")
+  - Updated tutorial to explain partial match feedback
+- **UI Improvements:**
+  - Made daily plays chart responsive for mobile devices
+  - Changed Y-axis label from "Daily Players" to "Players"
+  - Removed chart title for cleaner appearance
+  - Added version updates section below chart
+- **Testing:**
+  - Created comprehensive test suite with 11 tests covering all new features
+  - All tests passed without modifying daily puzzle
+
+### v1.0.0 (2026-02-17)
+- Initial Riftle launch
+- Daily card puzzle game with 6 attributes (Type, Faction, Rarity, Energy, Might, Power)
+- User statistics and leaderboards
+- Tutorial system for new players
+- GitHub Actions cron job for daily puzzle generation
+- Card database integration with Riftcodex API
+- User profiles with have/want lists
+- Tag system and search functionality
+- PDF/PNG export with progress tracking
+- Dark mode support
+- Popular Decks & Cards with meta statistics
+

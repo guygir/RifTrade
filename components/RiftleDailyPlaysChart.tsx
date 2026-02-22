@@ -17,6 +17,21 @@ export default function RiftleDailyPlaysChart() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<ChartData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [containerWidth, setContainerWidth] = useState(700);
+
+  // Measure container width for responsive sizing
+  useEffect(() => {
+    const updateWidth = () => {
+      const container = document.getElementById('daily-plays-chart-container');
+      if (container) {
+        setContainerWidth(Math.min(container.clientWidth - 40, 700)); // Max 700px, with padding
+      }
+    };
+    
+    updateWidth();
+    window.addEventListener('resize', updateWidth);
+    return () => window.removeEventListener('resize', updateWidth);
+  }, []);
 
   useEffect(() => {
     async function fetchData() {
@@ -65,8 +80,8 @@ export default function RiftleDailyPlaysChart() {
     );
   }
 
-  // Chart dimensions - wider for better visibility
-  const width = 700;
+  // Chart dimensions - responsive width, fixed height
+  const width = containerWidth;
   const height = 200;
   const padding = { top: 20, right: 20, bottom: 50, left: 60 };
   const chartWidth = width - padding.left - padding.right;
@@ -108,10 +123,7 @@ export default function RiftleDailyPlaysChart() {
     .join(' ');
 
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center">
-      <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
-        Daily Players Over Time
-      </h3>
+    <div id="daily-plays-chart-container" className="w-full h-full flex flex-col items-center justify-center">
       <svg
         width={width}
         height={height}
@@ -125,7 +137,7 @@ export default function RiftleDailyPlaysChart() {
           transform={`rotate(-90, 15, ${height / 2})`}
           className="text-base font-semibold fill-gray-700 dark:fill-gray-300"
         >
-          Daily Players
+          Players
         </text>
 
         {/* Y axis grid lines and ticks */}
