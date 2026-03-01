@@ -1283,9 +1283,9 @@ export default function RiftlePage() {
                 // Rounding logic:
                 // - yellow on top + green below: yellow=rounded-t, green=rounded-b
                 // - yellow only (no clean): yellow=rounded
-                // - green/red only: rounded-t
+                // - green/red only: rounded (all corners)
                 const yellowRounding = cleanHeightPx > 0 ? 'rounded-t' : 'rounded';
-                const greenRounding = cheatHeightPx > 0 ? 'rounded-b' : 'rounded-t';
+                const greenRounding = cheatHeightPx > 0 ? 'rounded-b' : 'rounded';
 
                 return (
                   <div key={label} className="flex flex-col items-center flex-1 min-w-[40px]">
