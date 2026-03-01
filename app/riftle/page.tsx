@@ -102,6 +102,10 @@ export default function RiftlePage() {
   const [cheatMode, setCheatMode] = useState(false);
   const [cheatEverEnabled, setCheatEverEnabled] = useState(false);
   const [allCards, setAllCards] = useState<any[]>([]);
+  const [showCheatWarning, setShowCheatWarning] = useState(false);
+  const [cheatWarningSeen, setCheatWarningSeen] = useState(() => {
+    try { return localStorage.getItem('riftle_cheat_warning_seen') === 'true'; } catch { return false; }
+  });
   
   // Load user on mount
   useEffect(() => {
@@ -500,6 +504,12 @@ export default function RiftlePage() {
       if (statsData) {
         setTutorialSeenIntro(statsData.tutorial_seen_intro || false);
         setTutorialSeenFeedback(statsData.tutorial_seen_feedback || false);
+
+        // Sync cheat warning seen from DB (authenticated users — cross-device)
+        if (statsData.cheat_warning_seen) {
+          setCheatWarningSeen(true);
+          try { localStorage.setItem('riftle_cheat_warning_seen', 'true'); } catch {}
+        }
         
         // Show intro tutorial if user hasn't seen it and hasn't played yet
         if (!statsData.tutorial_seen_intro && statsData.total_games === 0 && !loading) {
@@ -869,6 +879,11 @@ export default function RiftlePage() {
                 <button
                   onClick={async () => {
                     const newVal = !cheatMode;
+                    // If turning ON for the first time ever, show warning (unless already seen)
+                    if (newVal && !cheatWarningSeen) {
+                      setShowCheatWarning(true);
+                      return; // wait for user confirmation
+                    }
                     setCheatMode(newVal);
                     if (newVal && !cheatEverEnabled) {
                       setCheatEverEnabled(true);
@@ -1050,6 +1065,75 @@ export default function RiftlePage() {
           </div>
         )}
         
+        {/* Cheat Mode Warning Modal */}
+        {showCheatWarning && (
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-sm w-full p-6">
+              <div className="text-center mb-4">
+                <span className="text-4xl">🟡</span>
+              </div>
+              <h2 className="text-xl font-bold text-center mb-3 dark:text-white">Enable Cheat Mode?</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-300 text-center mb-6">
+                Cheat Mode shows you all cards still consistent with your guesses — but it comes at a cost.
+                A cheat win counts <strong>less than a clean win</strong> and <strong>more than a loss</strong> on the leaderboard.
+                Once enabled for today's puzzle, it cannot be undone.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowCheatWarning(false);
+                    // User said No — do nothing, cheat stays off
+                  }}
+                  className="flex-1 py-2 px-4 rounded-lg border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-semibold hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                >
+                  No, keep it clean
+                </button>
+                <button
+                  onClick={async () => {
+                    // Mark warning as seen — localStorage (anon + authenticated)
+                    try { localStorage.setItem('riftle_cheat_warning_seen', 'true'); } catch {}
+                    setCheatWarningSeen(true);
+                    setShowCheatWarning(false);
+                    // Also persist to DB for authenticated users (cross-device, same as tutorial flags)
+                    if (user) {
+                      const supabase = createSupabaseClient();
+                      await supabase
+                        .from('user_stats')
+                        .upsert({
+                          user_id: user.id,
+                          cheat_warning_seen: true,
+                        }, { onConflict: 'user_id' });
+                    }
+                    // Now enable cheat mode
+                    setCheatMode(true);
+                    if (!cheatEverEnabled) {
+                      setCheatEverEnabled(true);
+                      if (user && puzzleId) {
+                        const supabase = createSupabaseClient();
+                        await supabase
+                          .from('guesses')
+                          .upsert({
+                            user_id: user.id,
+                            puzzle_id: puzzleId,
+                            used_cheat: true,
+                            guess_history: guessHistory,
+                            guesses_used: guessesUsed,
+                            is_solved: false,
+                            time_taken_seconds: elapsedTime,
+                            total_score: 0,
+                          }, { onConflict: 'user_id,puzzle_id' });
+                      }
+                    }
+                  }}
+                  className="flex-1 py-2 px-4 rounded-lg bg-yellow-400 hover:bg-yellow-300 text-gray-900 font-semibold transition-colors"
+                >
+                  Yes, show me
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Guess History */}
         {guessHistory.length > 0 && (
           <div>
@@ -1196,13 +1280,20 @@ export default function RiftlePage() {
                 const cleanHeightPx = Math.max(0, totalHeightPx - cheatHeightPx);
                 const bgColor = value === 'X' ? 'bg-red-600' : 'bg-green-600';
                 
+                // Rounding logic:
+                // - yellow on top + green below: yellow=rounded-t, green=rounded-b
+                // - yellow only (no clean): yellow=rounded
+                // - green/red only: rounded-t
+                const yellowRounding = cleanHeightPx > 0 ? 'rounded-t' : 'rounded';
+                const greenRounding = cheatHeightPx > 0 ? 'rounded-b' : 'rounded-t';
+
                 return (
                   <div key={label} className="flex flex-col items-center flex-1 min-w-[40px]">
                     {totalCount > 0 && (
                       <div className="w-full flex flex-col" style={{ height: `${totalHeightPx}px` }}>
                         {cheatHeightPx > 0 && (
                           <div
-                            className="bg-yellow-400 text-gray-900 text-xs font-bold w-full flex items-center justify-center"
+                            className={`bg-yellow-400 text-gray-900 text-xs font-bold w-full flex items-center justify-center ${yellowRounding}`}
                             style={{ height: `${cheatHeightPx}px` }}
                           >
                             {cheatCount}
@@ -1210,7 +1301,7 @@ export default function RiftlePage() {
                         )}
                         {cleanHeightPx > 0 && (
                           <div
-                            className={`${bgColor} text-white text-xs font-bold rounded-t w-full flex items-center justify-center flex-1`}
+                            className={`${bgColor} text-white text-xs font-bold ${greenRounding} w-full flex items-center justify-center flex-1`}
                             style={{ height: `${cleanHeightPx}px` }}
                           >
                             {cleanCount > 0 ? cleanCount : ''}
