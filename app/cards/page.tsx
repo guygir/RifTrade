@@ -10,6 +10,17 @@ import { getCardDisplayName } from '@/lib/card-display';
 import PopularCards from '@/components/PopularCards';
 import { useTradingPermission } from '@/lib/hooks/useTradingPermission';
 
+/** Extract individual factions from card metadata as an array */
+function getCardFactions(card: Card): string[] {
+  const domain = card.metadata?.classification?.domain;
+  if (Array.isArray(domain) && domain.length > 0) {
+    return domain;
+  }
+  return [];
+}
+
+const RARITY_ORDER = ['Common', 'Uncommon', 'Rare', 'Epic', 'Showcase'];
+
 export default function CardsPage() {
   const router = useRouter();
   const { isLoading: permissionLoading, isTradingEnabled } = useTradingPermission();
@@ -20,6 +31,8 @@ export default function CardsPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSets, setSelectedSets] = useState<Set<string>>(new Set(['OGN'])); // Default: only OGN
+  const [selectedFactions, setSelectedFactions] = useState<Set<string>>(new Set()); // Empty = all
+  const [selectedRarities, setSelectedRarities] = useState<Set<string>>(new Set()); // Empty = all
   const [showOwned, setShowOwned] = useState(true);
   const [showUnowned, setShowUnowned] = useState(true);
 
@@ -116,11 +129,25 @@ export default function CardsPage() {
   };
 
   const sets = Array.from(new Set(cards.map(c => c.set_code))).sort();
-  
+
+  // Individual unique factions (not combined), sorted alphabetically
+  const factions = Array.from(
+    new Set(cards.flatMap(c => getCardFactions(c)))
+  ).sort();
+
+  // Rarities in defined order, only including ones that exist in the data
+  const allRarities = Array.from(
+    new Set(cards.map(c => c.rarity).filter((r): r is string => r !== null))
+  );
+  const rarities = [
+    ...RARITY_ORDER.filter(r => allRarities.includes(r)),
+    ...allRarities.filter(r => !RARITY_ORDER.includes(r)).sort(),
+  ];
+
   const filteredCards = cards.filter(card => {
     // Search by name, collector number, or public_code
     const searchLower = searchTerm.toLowerCase();
-    const matchesSearch = 
+    const matchesSearch =
       card.name.toLowerCase().includes(searchLower) ||
       card.collector_number.toLowerCase().includes(searchLower) ||
       (card.public_code && card.public_code.toLowerCase().includes(searchLower)) ||
@@ -128,14 +155,25 @@ export default function CardsPage() {
     
     // Filter by selected sets
     const matchesSet = selectedSets.size === 0 || selectedSets.has(card.set_code);
+
+    // Filter by selected factions — card matches if it contains ANY of the selected factions
+    const cardFactions = getCardFactions(card);
+    const matchesFaction =
+      selectedFactions.size === 0 ||
+      cardFactions.some(f => selectedFactions.has(f));
+
+    // Filter by selected rarities (empty = show all)
+    const matchesRarity =
+      selectedRarities.size === 0 ||
+      (card.rarity !== null && selectedRarities.has(card.rarity));
     
     // Filter by owned/unowned
     const isOwned = userHaveCards.has(card.id) || userWantCards.has(card.id);
-    const matchesOwnership = 
-      (showOwned && isOwned) || 
+    const matchesOwnership =
+      (showOwned && isOwned) ||
       (showUnowned && !isOwned);
     
-    return matchesSearch && matchesSet && matchesOwnership;
+    return matchesSearch && matchesSet && matchesFaction && matchesRarity && matchesOwnership;
   });
 
   if (loading) {
@@ -195,7 +233,7 @@ export default function CardsPage() {
             />
             
             <div className="flex flex-wrap gap-4">
-              <div className="flex-1">
+              <div className="flex-1 min-w-[160px]">
                 <label className="block text-sm font-medium mb-2">Sets:</label>
                 <div className="flex flex-wrap gap-2">
                   {sets.map(set => (
@@ -215,6 +253,76 @@ export default function CardsPage() {
                         className="cursor-pointer"
                       />
                       <span className="text-sm">{set}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex-1 min-w-[160px]">
+                <label className="block text-sm font-medium mb-2">
+                  Faction:
+                  {selectedFactions.size > 0 && (
+                    <button
+                      onClick={() => setSelectedFactions(new Set())}
+                      className="ml-2 text-xs text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {factions.map(faction => (
+                    <label key={faction} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedFactions.has(faction)}
+                        onChange={(e) => {
+                          const newFactions = new Set(selectedFactions);
+                          if (e.target.checked) {
+                            newFactions.add(faction);
+                          } else {
+                            newFactions.delete(faction);
+                          }
+                          setSelectedFactions(newFactions);
+                        }}
+                        className="cursor-pointer"
+                      />
+                      <span className="text-sm">{faction}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex-1 min-w-[160px]">
+                <label className="block text-sm font-medium mb-2">
+                  Rarity:
+                  {selectedRarities.size > 0 && (
+                    <button
+                      onClick={() => setSelectedRarities(new Set())}
+                      className="ml-2 text-xs text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {rarities.map(rarity => (
+                    <label key={rarity} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedRarities.has(rarity)}
+                        onChange={(e) => {
+                          const newRarities = new Set(selectedRarities);
+                          if (e.target.checked) {
+                            newRarities.add(rarity);
+                          } else {
+                            newRarities.delete(rarity);
+                          }
+                          setSelectedRarities(newRarities);
+                        }}
+                        className="cursor-pointer"
+                      />
+                      <span className="text-sm">{rarity}</span>
                     </label>
                   ))}
                 </div>

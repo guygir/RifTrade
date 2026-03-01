@@ -226,4 +226,109 @@ export function formatAttributeValue(
   return String(value);
 }
 
+/**
+ * Compute the list of candidate cards that are still consistent with all guesses made so far.
+ * Used by the Cheat Mode panel.
+ *
+ * Rules derived from feedback:
+ *   Categorical (type, faction, rarity):
+ *     "correct"  → candidate must have the exact same value
+ *     "wrong"    → candidate must NOT have that value
+ *     "partial"  → (faction only) candidate must share at least one domain with the guessed value,
+ *                  but the full combined value is not an exact match
+ *   Numeric (energy, might, power):
+ *     "exact"    → candidate must have the exact same value
+ *     "high"     → actual is LOWER than guessed → candidate value must be < guessed value
+ *     "low"      → actual is HIGHER than guessed → candidate value must be > guessed value
+ *
+ * @param guessHistory  Array of GuessHistoryItem objects (card_name, attributes, feedback)
+ * @param allCards      Full list of eligible cards (with metadata)
+ * @returns             Filtered array of cards that are still possible answers
+ */
+export function computeCheatCandidates(
+  guessHistory: Array<{ card_name: string; attributes: CardAttributes; feedback: AttributeFeedback }>,
+  allCards: any[]
+): any[] {
+  if (guessHistory.length === 0) return allCards;
+
+  return allCards.filter(card => {
+    const attrs = extractCardAttributes(card);
+
+    for (const guess of guessHistory) {
+      const gAttrs = guess.attributes;
+      const fb = guess.feedback;
+
+      // Coerce numeric values to numbers (guard against JSON string deserialization)
+      const gEnergy = Number(gAttrs.energy ?? 0);
+      const gMight  = Number(gAttrs.might  ?? 0);
+      const gPower  = Number(gAttrs.power  ?? 0);
+
+      // ── Categorical: type ──────────────────────────────────────────────
+      if (fb.type === 'correct') {
+        if (attrs.type !== gAttrs.type) return false;
+      } else if (fb.type === 'wrong') {
+        if (attrs.type === gAttrs.type) return false;
+      }
+      // 'partial' is not used for type, but handle gracefully (no constraint)
+
+      // ── Categorical: rarity ────────────────────────────────────────────
+      if (fb.rarity === 'correct') {
+        if (attrs.rarity !== gAttrs.rarity) return false;
+      } else if (fb.rarity === 'wrong') {
+        if (attrs.rarity === gAttrs.rarity) return false;
+      }
+
+      // ── Categorical: faction (domain) ──────────────────────────────────
+      // gAttrs.faction is a sorted comma-separated string of domains
+      const guessedDomains = (gAttrs.faction || '').split(',').map((d: string) => d.trim()).filter(Boolean);
+      const candidateDomains = (attrs.faction || '').split(',').map((d: string) => d.trim()).filter(Boolean);
+
+      if (fb.faction === 'correct') {
+        // Exact match required
+        if (attrs.faction !== gAttrs.faction) return false;
+      } else if (fb.faction === 'wrong') {
+        // No overlap at all
+        const hasOverlap = guessedDomains.some((d: string) => candidateDomains.includes(d));
+        if (hasOverlap) return false;
+      } else if (fb.faction === 'partial') {
+        // Must share at least one domain, but not be an exact match
+        const hasOverlap = guessedDomains.some((d: string) => candidateDomains.includes(d));
+        if (!hasOverlap) return false;
+        if (attrs.faction === gAttrs.faction) return false; // would be 'correct', not 'partial'
+      }
+
+      // ── Numeric: energy ────────────────────────────────────────────────
+      if (fb.energy === 'exact') {
+        if (attrs.energy !== gEnergy) return false;
+      } else if (fb.energy === 'high') {
+        // guessed too high → actual is lower → candidate must be < guessed
+        if (attrs.energy >= gEnergy) return false;
+      } else if (fb.energy === 'low') {
+        // guessed too low → actual is higher → candidate must be > guessed
+        if (attrs.energy <= gEnergy) return false;
+      }
+
+      // ── Numeric: might ─────────────────────────────────────────────────
+      if (fb.might === 'exact') {
+        if (attrs.might !== gMight) return false;
+      } else if (fb.might === 'high') {
+        if (attrs.might >= gMight) return false;
+      } else if (fb.might === 'low') {
+        if (attrs.might <= gMight) return false;
+      }
+
+      // ── Numeric: power ─────────────────────────────────────────────────
+      if (fb.power === 'exact') {
+        if (attrs.power !== gPower) return false;
+      } else if (fb.power === 'high') {
+        if (attrs.power >= gPower) return false;
+      } else if (fb.power === 'low') {
+        if (attrs.power <= gPower) return false;
+      }
+    }
+
+    return true;
+  });
+}
+
 // Made with Bob

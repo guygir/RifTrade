@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { createSupabaseClient } from '@/lib/supabase/client';
-import { ATTRIBUTE_LABELS, ATTRIBUTE_TYPES, type AttributeFeedback, extractCardAttributes, generateFeedback, isCorrectGuess } from '@/lib/riftle/feedback';
+import { ATTRIBUTE_LABELS, ATTRIBUTE_TYPES, type AttributeFeedback, extractCardAttributes, generateFeedback, isCorrectGuess, computeCheatCandidates } from '@/lib/riftle/feedback';
 import { RIFTLE_CONFIG } from '@/lib/riftle/config';
 import { getCountryFlag } from '@/lib/geo-utils';
 import RiftleTutorial from '@/components/RiftleTutorial';
@@ -36,6 +36,7 @@ interface Stats {
   maxStreak: number;
   averageGuesses: number;
   solvedDistribution: Record<string, number>;
+  cheatDistribution: Record<string, number>;
   recentGames: Array<{
     date: string;
     guessesUsed: number;
@@ -49,6 +50,7 @@ interface LeaderboardEntry {
   displayName: string;
   countryFlag: string;
   isSolved?: boolean;
+  usedCheat?: boolean;
   guessesUsed?: number;
   timeInSeconds?: number;
   totalGames?: number;
@@ -95,12 +97,17 @@ export default function RiftlePage() {
   const [showTutorial, setShowTutorial] = useState<'intro' | 'feedback' | null>(null);
   const [tutorialSeenIntro, setTutorialSeenIntro] = useState(false);
   const [tutorialSeenFeedback, setTutorialSeenFeedback] = useState(false);
+
+  // Cheat mode state
+  const [cheatMode, setCheatMode] = useState(false);
+  const [cheatEverEnabled, setCheatEverEnabled] = useState(false);
+  const [allCards, setAllCards] = useState<any[]>([]);
   
   // Load user on mount
   useEffect(() => {
     loadUser();
-    // Load tutorial flags from localStorage for anonymous users
     loadTutorialFlags();
+    loadAllCards();
   }, []);
   
   // Check tutorial flags when loading finishes
@@ -176,6 +183,16 @@ export default function RiftlePage() {
     };
   }, []);
   
+  async function loadAllCards() {
+    try {
+      const response = await fetch('/api/riftle/cards');
+      const data = await response.json();
+      setAllCards(data.cards || []);
+    } catch (err) {
+      console.error('Error loading all cards for cheat panel:', err);
+    }
+  }
+
   function loadTutorialFlags() {
     // Load tutorial flags from localStorage for anonymous users
     try {
@@ -247,6 +264,12 @@ export default function RiftlePage() {
           const isComplete = guessData.is_solved || guessData.guesses_used >= maxGuesses;
           setGameOver(isComplete);
           setWon(guessData.is_solved);
+
+          // Restore cheat mode state
+          if (guessData.used_cheat) {
+            setCheatEverEnabled(true);
+            setCheatMode(true);
+          }
           
           // Show answer if game was already completed
           if (isComplete) {
@@ -350,6 +373,7 @@ export default function RiftlePage() {
             is_solved: correct,
             time_taken_seconds: timeInSeconds,
             total_score: correct ? (maxGuesses - newGuessesUsed + 1) : 0,
+            used_cheat: cheatEverEnabled,
             submitted_at: new Date().toISOString(),
           }, {
             onConflict: 'user_id,puzzle_id'
@@ -361,7 +385,7 @@ export default function RiftlePage() {
         
         // Update user stats if game is complete
         if (isGameOver) {
-          await updateUserStatsClientSide(user.id, newGuessesUsed, correct);
+          await updateUserStatsClientSide(user.id, newGuessesUsed, correct, cheatEverEnabled);
           setTimeout(() => loadStats(), 500);
         }
       }
@@ -387,7 +411,7 @@ export default function RiftlePage() {
     }
   }
   
-  async function updateUserStatsClientSide(userId: string, guessesUsed: number, isSolved: boolean) {
+  async function updateUserStatsClientSide(userId: string, guessesUsed: number, isSolved: boolean, usedCheat: boolean = false) {
     const supabase = createSupabaseClient();
     
     // Get current stats
@@ -399,10 +423,14 @@ export default function RiftlePage() {
     
     const totalGames = (currentStats?.total_games || 0) + 1;
     const failedGames = (currentStats?.failed_games || 0) + (isSolved ? 0 : 1);
-    const solvedDistribution = currentStats?.solved_distribution || {};
+    const solvedDistribution = { ...(currentStats?.solved_distribution || {}) };
+    const cheatDistribution = { ...(currentStats?.cheat_distribution || {}) };
     
     if (isSolved) {
       solvedDistribution[guessesUsed] = (solvedDistribution[guessesUsed] || 0) + 1;
+      if (usedCheat) {
+        cheatDistribution[guessesUsed] = (cheatDistribution[guessesUsed] || 0) + 1;
+      }
     }
     
     // Calculate streaks
@@ -439,6 +467,7 @@ export default function RiftlePage() {
         total_games: totalGames,
         failed_games: failedGames,
         solved_distribution: solvedDistribution,
+        cheat_distribution: cheatDistribution,
         current_streak: currentStreak,
         max_streak: maxStreak,
         average_guesses: averageGuesses,
@@ -526,6 +555,7 @@ export default function RiftlePage() {
         failedGames,
         winPercent: Math.round(winPercent * 10) / 10,
         solvedDistribution: statsData?.solved_distribution || {},
+        cheatDistribution: statsData?.cheat_distribution || {},
         currentStreak: statsData?.current_streak || 0,
         maxStreak: statsData?.max_streak || 0,
         averageGuesses: statsData?.average_guesses || 0,
@@ -561,7 +591,7 @@ export default function RiftlePage() {
       // Get today's FINISHED games only (solved OR used max guesses)
       const { data: allEntries, error } = await supabase
         .from('guesses')
-        .select('user_id, guesses_used, is_solved, time_taken_seconds')
+        .select('user_id, guesses_used, is_solved, time_taken_seconds, used_cheat')
         .eq('puzzle_id', todayPuzzle.id)
         .limit(100);
       
@@ -603,14 +633,17 @@ export default function RiftlePage() {
         }])
       );
       
-      // Sort entries: wins first (by guesses, then time), then losses (by time)
-      const sortedEntries = [...entries].sort((a, b) => {
-        // Wins come before losses
-        if (a.is_solved !== b.is_solved) {
-          return a.is_solved ? -1 : 1;
-        }
-        
-        // For wins: sort by guesses used, then time
+      // Sort entries: clean wins first, then cheat wins, then losses
+      const sortedEntries = [...entries].sort((a: any, b: any) => {
+        const aCleanWin = a.is_solved && !a.used_cheat;
+        const bCleanWin = b.is_solved && !b.used_cheat;
+        const aCheatWin = a.is_solved && a.used_cheat;
+        const bCheatWin = b.is_solved && b.used_cheat;
+
+        if (aCleanWin !== bCleanWin) return aCleanWin ? -1 : 1;
+        if (aCheatWin !== bCheatWin) return aCheatWin ? -1 : 1;
+
+        // Within same category: sort by guesses used, then time
         if (a.is_solved && b.is_solved) {
           if (a.guesses_used !== b.guesses_used) {
             return a.guesses_used - b.guesses_used;
@@ -623,7 +656,7 @@ export default function RiftlePage() {
       });
       
       // Format entries with rank, display names, and country flags
-      const formattedEntries = sortedEntries.map((entry, index) => {
+      const formattedEntries = sortedEntries.map((entry: any, index: number) => {
         const profile = profileMap.get(entry.user_id);
         const displayName = profile?.displayName || profile?.username || 'Anonymous';
         const countryFlag = getCountryFlag(profile?.country || null);
@@ -635,6 +668,7 @@ export default function RiftlePage() {
           guessesUsed: entry.guesses_used,
           timeInSeconds: entry.time_taken_seconds,
           isSolved: entry.is_solved,
+          usedCheat: entry.used_cheat || false,
         };
       });
       
@@ -784,55 +818,147 @@ export default function RiftlePage() {
       
       {/* Game Area */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
-        {/* Input */}
+        {/* Input + optional Cheat Panel side by side */}
         {!gameOver && (
-          <div className="mb-6">
-            <div className="relative">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setJustSelected(false); // User is manually typing, allow dropdown
-                }}
-                placeholder="Type a card name..."
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
-                disabled={submitting}
-              />
-              
-              {/* Suggestions dropdown */}
-              {suggestions.length > 0 && (
-                <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                  {suggestions.map((card) => (
-                    <button
-                      key={card.id}
-                      onClick={() => {
-                        setSelectedCard(card);
-                        setSearchQuery(card.name);
-                        setSuggestions([]);
-                        setJustSelected(true); // Mark that user just selected from dropdown
-                      }}
-                      className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-600 flex justify-between items-center"
-                    >
-                      <span>{card.name}</span>
-                      <span className="text-sm text-gray-500">{card.set_code} #{card.collector_number}</span>
-                    </button>
-                  ))}
+          <div className="mb-6 flex gap-4 items-start">
+            {/* Left: search + buttons */}
+            <div className="flex-1 min-w-0">
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setJustSelected(false);
+                  }}
+                  placeholder="Type a card name..."
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
+                  disabled={submitting}
+                />
+                
+                {/* Suggestions dropdown */}
+                {suggestions.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {suggestions.map((card) => (
+                      <button
+                        key={card.id}
+                        onClick={() => {
+                          setSelectedCard(card);
+                          setSearchQuery(card.name);
+                          setSuggestions([]);
+                          setJustSelected(true);
+                        }}
+                        className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-600 flex justify-between items-center"
+                      >
+                        <span>{card.name}</span>
+                        <span className="text-sm text-gray-500">{card.set_code} #{card.collector_number}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-4 flex gap-2">
+                <button
+                  onClick={submitGuess}
+                  disabled={!selectedCard || submitting}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+                >
+                  {submitting ? 'Submitting...' : 'Submit Guess'}
+                </button>
+                <button
+                  onClick={async () => {
+                    const newVal = !cheatMode;
+                    setCheatMode(newVal);
+                    if (newVal && !cheatEverEnabled) {
+                      setCheatEverEnabled(true);
+                      if (user && puzzleId) {
+                        const supabase = createSupabaseClient();
+                        await supabase
+                          .from('guesses')
+                          .upsert({
+                            user_id: user.id,
+                            puzzle_id: puzzleId,
+                            used_cheat: true,
+                            guess_history: guessHistory,
+                            guesses_used: guessesUsed,
+                            is_solved: false,
+                            time_taken_seconds: elapsedTime,
+                            total_score: 0,
+                          }, { onConflict: 'user_id,puzzle_id' });
+                      }
+                    }
+                  }}
+                  className={`flex-1 font-semibold py-3 px-6 rounded-lg transition-colors border-2 ${
+                    cheatMode
+                      ? 'bg-yellow-400 border-yellow-500 text-gray-900 hover:bg-yellow-300'
+                      : 'bg-transparent border-yellow-400 text-yellow-500 hover:bg-yellow-50 dark:hover:bg-yellow-900/20'
+                  }`}
+                >
+                  {cheatMode ? '🟡 Cheat ON' : '⬜ Cheat OFF'}
+                </button>
+              </div>
+
+              <div className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
+                {guessHistory.length} / {maxGuesses} guesses used
+              </div>
+            </div>
+
+            {/* Right: Cheat Panel */}
+            {cheatMode && (() => {
+              const rawCandidates = computeCheatCandidates(guessHistory, allCards);
+              // Sort same as Cards page: set_code asc → sort_key asc (nulls last) → collector_number asc
+              const candidates = [...rawCandidates].sort((a, b) => {
+                const setDiff = (a.set_code || '').localeCompare(b.set_code || '');
+                if (setDiff !== 0) return setDiff;
+                const aSortKey = a.metadata?.sort_key ?? a.metadata?.attributes?.sort_key ?? null;
+                const bSortKey = b.metadata?.sort_key ?? b.metadata?.attributes?.sort_key ?? null;
+                if (aSortKey !== null && bSortKey !== null) {
+                  if (aSortKey < bSortKey) return -1;
+                  if (aSortKey > bSortKey) return 1;
+                } else if (aSortKey !== null) return -1;
+                else if (bSortKey !== null) return 1;
+                return (a.collector_number || '').localeCompare(b.collector_number || '', undefined, { numeric: true });
+              });
+              return (
+                <div className="w-64 flex-shrink-0">
+                  <div className="border border-yellow-400 rounded-lg overflow-hidden">
+                    <div className="bg-yellow-400 text-gray-900 text-xs font-bold px-3 py-1">
+                      Possible Cards ({candidates.length})
+                    </div>
+                    <div className="overflow-y-auto max-h-96 bg-white dark:bg-gray-800">
+                      {candidates.map((card: any) => (
+                        <div key={card.id} className="flex items-center gap-2 px-2 py-2 border-b border-gray-100 dark:border-gray-700 last:border-0">
+                          {card.image_url ? (
+                            <div className="relative flex-shrink-0 bg-gray-100 dark:bg-gray-700 rounded overflow-hidden" style={{ width: 48, height: 67 }}>
+                              <Image
+                                src={`/api/image-proxy?url=${encodeURIComponent(card.image_url)}`}
+                                alt={card.name}
+                                fill
+                                className="object-contain"
+                                sizes="48px"
+                                unoptimized
+                              />
+                            </div>
+                          ) : (
+                            <div className="flex-shrink-0 bg-gray-200 dark:bg-gray-600 rounded flex items-center justify-center text-gray-400 text-xs" style={{ width: 48, height: 67 }}>
+                              ?
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <div className="text-xs font-semibold truncate dark:text-white">{card.name}</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">{card.set_code} #{card.collector_number}</div>
+                          </div>
+                        </div>
+                      ))}
+                      {candidates.length === 0 && (
+                        <div className="px-3 py-4 text-xs text-gray-500 text-center">No matching cards</div>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              )}
-            </div>
-            
-            <button
-              onClick={submitGuess}
-              disabled={!selectedCard || submitting}
-              className="mt-4 w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
-            >
-              {submitting ? 'Submitting...' : 'Submit Guess'}
-            </button>
-            
-            <div className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
-              {guessHistory.length} / {maxGuesses} guesses used
-            </div>
+              );
+            })()}
           </div>
         )}
         
@@ -931,6 +1057,16 @@ export default function RiftlePage() {
             <div className="space-y-3">
               {[...guessHistory].reverse().map((guess, index) => {
                 const guessNumber = guessHistory.length - index;
+                // "Almost" warning: all 6 attributes are correct/exact,
+                // but the card name doesn't match the answer (different card, same stats).
+                const isAlmostMatch =
+                  !isCorrectGuess({ name: guess.card_name }, puzzleCard) &&
+                  guess.feedback.type === 'correct' &&
+                  guess.feedback.faction === 'correct' &&
+                  guess.feedback.rarity === 'correct' &&
+                  guess.feedback.energy === 'exact' &&
+                  guess.feedback.might === 'exact' &&
+                  guess.feedback.power === 'exact';
                 return (
                   <div key={index} className="border border-gray-300 dark:border-gray-600 rounded-lg p-3">
                     <div className="flex items-center gap-2 mb-2">
@@ -943,6 +1079,11 @@ export default function RiftlePage() {
                       {guess.set_code && guess.collector_number && (
                         <span className="text-sm text-gray-500 dark:text-gray-400">
                           {guess.set_code} #{guess.collector_number}
+                        </span>
+                      )}
+                      {isAlmostMatch && (
+                        <span className="ml-auto text-sm text-amber-600 dark:text-amber-400 whitespace-nowrap">
+                          ⚠️ Almost, but it is not this one…
                         </span>
                       )}
                     </div>
@@ -1042,24 +1183,39 @@ export default function RiftlePage() {
                 { label: '6', value: 6 },
                 { label: 'Failed', value: 'X' }
               ].map(({ label, value }) => {
-                const count = value === 'X' ? stats.failedGames : (stats.solvedDistribution[value as number] || 0);
+                const totalCount = value === 'X' ? stats.failedGames : (stats.solvedDistribution[value as number] || 0);
+                const cheatCount = value === 'X' ? 0 : (stats.cheatDistribution[value as number] || 0);
+                const cleanCount = Math.max(0, totalCount - cheatCount);
                 const maxCount = Math.max(
                   ...Object.values(stats.solvedDistribution),
                   stats.failedGames || 0,
-                  1 // Ensure at least 1 to avoid division by zero
+                  1
                 );
-                // Calculate height in pixels relative to the 128px (h-32) container
-                const heightPx = maxCount > 0 ? Math.round((count / maxCount) * 120) : 0; // 120px max to leave room for label
+                const totalHeightPx = maxCount > 0 ? Math.round((totalCount / maxCount) * 120) : 0;
+                const cheatHeightPx = maxCount > 0 ? Math.round((cheatCount / maxCount) * 120) : 0;
+                const cleanHeightPx = Math.max(0, totalHeightPx - cheatHeightPx);
                 const bgColor = value === 'X' ? 'bg-red-600' : 'bg-green-600';
                 
                 return (
                   <div key={label} className="flex flex-col items-center flex-1 min-w-[40px]">
-                    {count > 0 && (
-                      <div
-                        className={`${bgColor} text-white text-xs font-bold rounded-t w-full flex items-center justify-center transition-all`}
-                        style={{ height: `${heightPx}px` }}
-                      >
-                        {count}
+                    {totalCount > 0 && (
+                      <div className="w-full flex flex-col" style={{ height: `${totalHeightPx}px` }}>
+                        {cheatHeightPx > 0 && (
+                          <div
+                            className="bg-yellow-400 text-gray-900 text-xs font-bold w-full flex items-center justify-center"
+                            style={{ height: `${cheatHeightPx}px` }}
+                          >
+                            {cheatCount}
+                          </div>
+                        )}
+                        {cleanHeightPx > 0 && (
+                          <div
+                            className={`${bgColor} text-white text-xs font-bold rounded-t w-full flex items-center justify-center flex-1`}
+                            style={{ height: `${cleanHeightPx}px` }}
+                          >
+                            {cleanCount > 0 ? cleanCount : ''}
+                          </div>
+                        )}
                       </div>
                     )}
                     <div className="text-xs font-semibold mt-1">{label}</div>
@@ -1113,15 +1269,25 @@ export default function RiftlePage() {
                   <tr
                     key={entry.rank}
                     className={`border-b border-gray-200 dark:border-gray-700 ${
-                      entry.isSolved ? 'bg-green-50 dark:bg-green-900/20' : 'bg-red-50 dark:bg-red-900/20'
+                      entry.isSolved && !entry.usedCheat
+                        ? 'bg-green-50 dark:bg-green-900/20'
+                        : entry.isSolved && entry.usedCheat
+                        ? 'bg-yellow-50 dark:bg-yellow-900/20'
+                        : 'bg-red-50 dark:bg-red-900/20'
                     }`}
                   >
                     <td className="py-2 px-2">{entry.rank}</td>
                     <td className="text-center py-2 px-2 text-2xl">{entry.countryFlag}</td>
                     <td className="py-2 px-2 font-semibold">{entry.displayName}</td>
                     <td className="text-center py-2 px-2">
-                      <span className={`font-bold ${entry.isSolved ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                        {entry.isSolved ? '✓ Win' : '✗ Failed'}
+                      <span className={`font-bold ${
+                        entry.isSolved && !entry.usedCheat
+                          ? 'text-green-600 dark:text-green-400'
+                          : entry.isSolved
+                          ? 'text-yellow-600 dark:text-yellow-400'
+                          : 'text-red-600 dark:text-red-400'
+                      }`}>
+                        {entry.isSolved ? (entry.usedCheat ? '🟡 Win*' : '✓ Win') : '✗ Failed'}
                       </span>
                     </td>
                     <td className="text-center py-2 px-2">{entry.guessesUsed || '-'}</td>
@@ -1162,6 +1328,11 @@ export default function RiftlePage() {
             <span className="font-semibold text-blue-600 dark:text-blue-400">v1.1</span>
             <span>-</span>
             <span>Champion unit type and double domain factions now supported</span>
+          </div>
+          <div className="flex items-center justify-center gap-2">
+            <span className="font-semibold text-blue-600 dark:text-blue-400">v1.2</span>
+            <span>-</span>
+            <span>Cheat Mode: Show remaining candidates</span>
           </div>
         </div>
       </div>

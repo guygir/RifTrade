@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     // Get eligible cards (excludes Battlefield, Foil, and Signature cards)
     let queryBuilder = supabase
       .from('cards')
-      .select('id, name, set_code, collector_number, rarity, metadata')
+      .select('id, name, set_code, collector_number, rarity, image_url, metadata')
       .neq('metadata->classification->>type', 'Battlefield')
       .neq('metadata->>variant', 'foil')
       .neq('metadata->metadata->>signature', 'true')
@@ -33,7 +33,8 @@ export async function GET(request: NextRequest) {
       queryBuilder = queryBuilder.ilike('name', `%${query}%`);
     }
     
-    const { data: cards, error } = await queryBuilder.limit(100);
+    // No limit when fetching all cards (for cheat panel); limit only when searching
+    const { data: cards, error } = query ? await queryBuilder.limit(100) : await queryBuilder;
     
     if (error) {
       console.error('Error fetching cards:', error);
