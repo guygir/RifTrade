@@ -8,6 +8,8 @@ import { RIFTLE_CONFIG } from '@/lib/riftle/config';
 import { getCountryFlag } from '@/lib/geo-utils';
 import RiftleTutorial from '@/components/RiftleTutorial';
 import RiftleDailyPlaysChart from '@/components/RiftleDailyPlaysChart';
+import PollWidget from '@/components/PollWidget';
+import SuggestionBox from '@/components/SuggestionBox';
 
 interface Card {
   id: string;
@@ -773,6 +775,7 @@ export default function RiftlePage() {
   }
   
   return (
+    <>
     <div className="container mx-auto px-4 py-8 max-w-6xl">
       {/* Tutorial Overlay */}
       {showTutorial && (
@@ -936,7 +939,7 @@ export default function RiftlePage() {
                 return (a.collector_number || '').localeCompare(b.collector_number || '', undefined, { numeric: true });
               });
               return (
-                <div className="w-64 flex-shrink-0">
+                <div className="w-1/2 md:w-64 flex-shrink-0">
                   <div className="border border-yellow-400 rounded-lg overflow-hidden">
                     <div className="bg-yellow-400 text-gray-900 text-xs font-bold px-3 py-1">
                       Possible Cards ({candidates.length})
@@ -1394,40 +1397,58 @@ export default function RiftlePage() {
         </div>
       </div>
       
-      {/* Daily Plays Chart - Full Width Below Stats and Leaderboard */}
-      <div className="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-        <div className="w-full min-h-[280px] flex justify-center items-center">
-          <RiftleDailyPlaysChart />
+      {/* Daily Plays Chart + Community Poll - Side by Side */}
+      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Left: Daily Plays Chart */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+          <h2 className="text-2xl font-bold mb-4">📈 Daily Players</h2>
+          <div className="w-full h-[280px] flex justify-center items-center">
+            <RiftleDailyPlaysChart />
+          </div>
         </div>
+        
+        {/* Right: Community Poll */}
+        <PollWidget pollId="a0000000-0000-0000-0000-000000000001" />
       </div>
       
-      {/* Version Updates - Same width as chart */}
-      <div className="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-        <div className="flex items-center justify-center gap-2 mb-3">
-          <span className="text-2xl">📊</span>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            Latest Updates
-          </h3>
+      {/* Latest Updates + Suggestion Box - Side by Side */}
+      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Left: Latest Updates */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              📣 Latest Updates
+            </h2>
+          </div>
+          <div className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-blue-600 dark:text-blue-400">v1.0</span>
+              <span>-</span>
+              <span>We're live!</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-blue-600 dark:text-blue-400">v1.1</span>
+              <span>-</span>
+              <span>All types and factions supported</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-blue-600 dark:text-blue-400">v1.2</span>
+              <span>-</span>
+              <span>Cheat Mode: Show remaining candidates</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-blue-600 dark:text-blue-400">v1.3</span>
+              <span>-</span>
+              <span>Community Poll and Suggestion Box</span>
+            </div>
+          </div>
         </div>
-        <div className="space-y-2 text-sm text-gray-700 dark:text-gray-300 text-center">
-          <div className="flex items-center justify-center gap-2">
-            <span className="font-semibold text-blue-600 dark:text-blue-400">v1.0</span>
-            <span>-</span>
-            <span>We're live!</span>
-          </div>
-          <div className="flex items-center justify-center gap-2">
-            <span className="font-semibold text-blue-600 dark:text-blue-400">v1.1</span>
-            <span>-</span>
-            <span>Champion unit type and double domain factions now supported</span>
-          </div>
-          <div className="flex items-center justify-center gap-2">
-            <span className="font-semibold text-blue-600 dark:text-blue-400">v1.2</span>
-            <span>-</span>
-            <span>Cheat Mode: Show remaining candidates</span>
-          </div>
-        </div>
+
+        {/* Right: Suggestion Box */}
+        <SuggestionBox user={user} />
       </div>
     </div>
+  </>
   );
 }
 

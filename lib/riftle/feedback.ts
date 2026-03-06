@@ -246,12 +246,18 @@ export function formatAttributeValue(
  * @returns             Filtered array of cards that are still possible answers
  */
 export function computeCheatCandidates(
-  guessHistory: Array<{ card_name: string; attributes: CardAttributes; feedback: AttributeFeedback }>,
+  guessHistory: Array<{ card_id: string; card_name: string; attributes: CardAttributes; feedback: AttributeFeedback }>,
   allCards: any[]
 ): any[] {
   if (guessHistory.length === 0) return allCards;
 
+  // Build set of guessed card IDs for fast lookup
+  const guessedCardIds = new Set(guessHistory.map(g => g.card_id));
+
   return allCards.filter(card => {
+    // Exclude cards that have already been guessed
+    if (guessedCardIds.has(card.id)) return false;
+
     const attrs = extractCardAttributes(card);
 
     for (const guess of guessHistory) {

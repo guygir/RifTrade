@@ -17,20 +17,34 @@ export default function RiftleDailyPlaysChart() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<ChartData | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [containerWidth, setContainerWidth] = useState(700);
+  const [containerWidth, setContainerWidth] = useState(500); // Start with smaller default
 
   // Measure container width for responsive sizing
   useEffect(() => {
     const updateWidth = () => {
       const container = document.getElementById('daily-plays-chart-container');
-      if (container) {
-        setContainerWidth(Math.min(container.clientWidth - 40, 700)); // Max 700px, with padding
+      if (container && container.clientWidth > 0) {
+        const newWidth = Math.min(container.clientWidth - 40, 700);
+        console.log('[Chart] Container width:', container.clientWidth, '→ Chart width:', newWidth);
+        setContainerWidth(newWidth);
       }
     };
     
+    // Multiple measurements to catch layout changes
     updateWidth();
+    const timer1 = setTimeout(updateWidth, 50);
+    const timer2 = setTimeout(updateWidth, 150);
+    const timer3 = setTimeout(updateWidth, 300);
+    const timer4 = setTimeout(updateWidth, 500);
+    
     window.addEventListener('resize', updateWidth);
-    return () => window.removeEventListener('resize', updateWidth);
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      clearTimeout(timer3);
+      clearTimeout(timer4);
+      window.removeEventListener('resize', updateWidth);
+    };
   }, []);
 
   useEffect(() => {
