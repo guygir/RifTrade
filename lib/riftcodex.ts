@@ -280,10 +280,10 @@ export function transformCard(card: RiftcodexCard, variant: 'normal' | 'foil' | 
   // This is done BEFORE any variant modifications to ensure foil variants have the same sort_key
   const sortKey = extractSortKey(riftboundId);
   
-  // Check if this is an overnumbered card (collector_number >= 299 for OGN set)
-  // Use the extracted collectorNumber (which comes from public_code or riftbound_id)
-  const collectorNum = parseInt(collectorNumber.replace(/[^0-9]/g, '')) || 0;
-  const isOvernumbered = setCode === 'OGN' && collectorNum >= 299 && collectorNum <= 310;
+  // Check if this is an overnumbered card using the metadata flag
+  // This is more reliable than hardcoding set/number ranges
+  const isOvernumbered = (card as any).metadata?.overnumbered === true ||
+                         (card as any).metadata?.overnumbered === 'true';
   
   // Handle name variations based on variant and rarity
   let cardName = card.name || '';

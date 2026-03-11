@@ -176,12 +176,12 @@ export function generateFeedback(
 }
 
 /**
- * Check if the guess is correct (card name matches)
+ * Check if the guess is correct (card ID matches)
+ * IMPORTANT: We compare IDs, not names, because multiple cards can have the same name
+ * across different sets (e.g., "Darius, Executioner (Alternate art)" exists in both OGN and SFD)
  */
 export function isCorrectGuess(guessedCard: any, actualCard: any): boolean {
-  const guessedName = (guessedCard.name || '').toLowerCase().trim();
-  const actualName = (actualCard.name || '').toLowerCase().trim();
-  return guessedName === actualName;
+  return guessedCard.id === actualCard.id;
 }
 
 /**

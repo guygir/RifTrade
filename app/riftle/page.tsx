@@ -1147,7 +1147,7 @@ export default function RiftlePage() {
                 // "Almost" warning: all 6 attributes are correct/exact,
                 // but the card name doesn't match the answer (different card, same stats).
                 const isAlmostMatch =
-                  !isCorrectGuess({ name: guess.card_name }, puzzleCard) &&
+                  !isCorrectGuess({ id: guess.card_id }, puzzleCard) &&
                   guess.feedback.type === 'correct' &&
                   guess.feedback.faction === 'correct' &&
                   guess.feedback.rarity === 'correct' &&
