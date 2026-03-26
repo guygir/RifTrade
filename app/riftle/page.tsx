@@ -924,7 +924,7 @@ export default function RiftlePage() {
 
             {/* Right: Cheat Panel */}
             {cheatMode && (() => {
-              const rawCandidates = computeCheatCandidates(guessHistory, allCards);
+              const rawCandidates = computeCheatCandidates(guessHistory, allCards, puzzleCard?.set_code);
               // Sort same as Cards page: set_code asc → sort_key asc (nulls last) → collector_number asc
               const candidates = [...rawCandidates].sort((a, b) => {
                 const setDiff = (a.set_code || '').localeCompare(b.set_code || '');
@@ -1156,18 +1156,28 @@ export default function RiftlePage() {
                   guess.feedback.power === 'exact';
                 return (
                   <div key={index} className="border border-gray-300 dark:border-gray-600 rounded-lg p-3">
-                    <div className="flex items-center gap-2 mb-2">
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
                       <span className="text-sm font-bold text-gray-500 dark:text-gray-400">
                         Guess #{guessNumber}:
                       </span>
-                      <span className="font-semibold">
-                        {guess.card_name}
-                      </span>
-                      {guess.set_code && guess.collector_number && (
-                        <span className="text-sm text-gray-500 dark:text-gray-400">
-                          {guess.set_code} #{guess.collector_number}
-                        </span>
+                      {guess.set_code && (
+                        <>
+                          <span className="text-sm text-gray-500 dark:text-gray-400">
+                            Set:
+                          </span>
+                          <span className={`px-2 py-1 rounded text-white text-sm font-semibold ${
+                            puzzleCard?.set_code === guess.set_code ? 'bg-green-500' : 'bg-red-500'
+                          }`}>
+                            {guess.set_code}
+                          </span>
+                        </>
                       )}
+                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                        Card:
+                      </span>
+                      <span className="font-semibold">
+                        {guess.collector_number && `#${guess.collector_number} `}{guess.card_name}
+                      </span>
                       {isAlmostMatch && (
                         <span className="ml-auto text-sm text-amber-600 dark:text-amber-400 whitespace-nowrap">
                           ⚠️ Almost, but it is not this one…
@@ -1408,7 +1418,12 @@ export default function RiftlePage() {
         </div>
         
         {/* Right: Community Poll */}
-        <PollWidget pollId="a0000000-0000-0000-0000-000000000001" />
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+          <h2 className="text-2xl font-bold mb-4">📊 Community Poll</h2>
+          <div className="flex items-center justify-center h-[232px] text-gray-500 dark:text-gray-400">
+            <p className="text-center">No poll currently active.<br />Check back soon!</p>
+          </div>
+        </div>
       </div>
       
       {/* Latest Updates + Suggestion Box - Side by Side */}
@@ -1440,6 +1455,11 @@ export default function RiftlePage() {
               <span className="font-semibold text-blue-600 dark:text-blue-400">v1.3</span>
               <span>-</span>
               <span>Community Poll and Suggestion Box</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-blue-600 dark:text-blue-400">v1.4</span>
+              <span>-</span>
+              <span>Set is now a category</span>
             </div>
           </div>
         </div>

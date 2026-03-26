@@ -240,14 +240,18 @@ export function formatAttributeValue(
  *     "exact"    → candidate must have the exact same value
  *     "high"     → actual is LOWER than guessed → candidate value must be < guessed value
  *     "low"      → actual is HIGHER than guessed → candidate value must be > guessed value
+ *   Set Code:
+ *     If set_code is provided and matches/doesn't match, filter accordingly
  *
- * @param guessHistory  Array of GuessHistoryItem objects (card_name, attributes, feedback)
+ * @param guessHistory  Array of GuessHistoryItem objects (card_name, attributes, feedback, set_code)
  * @param allCards      Full list of eligible cards (with metadata)
+ * @param puzzleSetCode The set code of the puzzle card (for set filtering)
  * @returns             Filtered array of cards that are still possible answers
  */
 export function computeCheatCandidates(
-  guessHistory: Array<{ card_id: string; card_name: string; attributes: CardAttributes; feedback: AttributeFeedback }>,
-  allCards: any[]
+  guessHistory: Array<{ card_id: string; card_name: string; attributes: CardAttributes; feedback: AttributeFeedback; set_code?: string }>,
+  allCards: any[],
+  puzzleSetCode?: string
 ): any[] {
   if (guessHistory.length === 0) return allCards;
 
@@ -263,6 +267,18 @@ export function computeCheatCandidates(
     for (const guess of guessHistory) {
       const gAttrs = guess.attributes;
       const fb = guess.feedback;
+
+      // ── Set Code filtering ─────────────────────────────────────────────
+      // If we have set code info, use it to filter
+      if (guess.set_code && puzzleSetCode) {
+        if (guess.set_code === puzzleSetCode) {
+          // Guessed set was correct, candidate must have same set
+          if (card.set_code !== puzzleSetCode) return false;
+        } else {
+          // Guessed set was wrong, candidate must NOT have that set
+          if (card.set_code === guess.set_code) return false;
+        }
+      }
 
       // Coerce numeric values to numbers (guard against JSON string deserialization)
       const gEnergy = Number(gAttrs.energy ?? 0);

@@ -1,7 +1,7 @@
 {
   "name": "riftrade",
-  "version": "1.2.0",
-  "description": "v1.2.0 - Cheat Mode: Show remaining candidates",
+  "version": "1.4.0",
+  "description": "v1.4.0 - Set is now a category",
   "private": true,
   "scripts": {
     "dev": "next dev",
