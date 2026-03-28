@@ -1418,12 +1418,7 @@ export default function RiftlePage() {
         </div>
         
         {/* Right: Community Poll */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-          <h2 className="text-2xl font-bold mb-4">📊 Community Poll</h2>
-          <div className="flex items-center justify-center h-[232px] text-gray-500 dark:text-gray-400">
-            <p className="text-center">No poll currently active.<br />Check back soon!</p>
-          </div>
-        </div>
+        <PollWidget pollId="a0000000-0000-0000-0000-000000000002" />
       </div>
       
       {/* Latest Updates + Suggestion Box - Side by Side */}
