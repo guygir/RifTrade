@@ -67,10 +67,12 @@ const nextConfig = {
           key: 'Content-Security-Policy',
           value: [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-eval' 'unsafe-inline'", // Next.js needs unsafe-eval in dev, unsafe-inline for inline scripts
-            "style-src 'self' 'unsafe-inline'", // Tailwind CSS needs unsafe-inline
+            "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://storage.ko-fi.com", // Next.js needs unsafe-eval in dev, unsafe-inline for inline scripts, Ko-fi widget
+            "style-src 'self' 'unsafe-inline' https://storage.ko-fi.com https://fonts.googleapis.com", // Tailwind CSS needs unsafe-inline, Ko-fi CSS and Google Fonts
+            "font-src 'self' https://fonts.gstatic.com", // Allow Google Fonts
             "img-src 'self' data: https:", // Allow images from same origin, data URIs, and HTTPS URLs for card images
-            "connect-src 'self' https://*.supabase.co https://ipapi.co", // Allow API calls to Supabase and ipapi.co for geo detection
+            "connect-src 'self' https://*.supabase.co https://ipapi.co https://ko-fi.com https://*.ko-fi.com", // Allow API calls to Supabase, ipapi.co for geo detection, and Ko-fi
+            "frame-src https://ko-fi.com", // Allow Ko-fi iframe
             "frame-ancestors 'none'", // Prevent embedding (same as X-Frame-Options but more modern
           ].join('; '),
         },
