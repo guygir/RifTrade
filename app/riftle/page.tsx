@@ -797,6 +797,12 @@ export default function RiftlePage() {
             Puzzle for {new Date(puzzleDate).toLocaleDateString()}
           </p>
         )}
+        {/* New Poll Notification */}
+        <div className="mt-3 inline-block">
+          <p className="text-red-500 font-bold text-lg animate-pulse drop-shadow-[0_0_10px_rgba(239,68,68,0.8)]">
+            🗳️ NEW POLL, PLEASE VOTE!
+          </p>
+        </div>
         {!gameOver && (
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
             Time: {Math.floor(elapsedTime / 60)}:{(elapsedTime % 60).toString().padStart(2, '0')}
@@ -1440,7 +1446,7 @@ export default function RiftlePage() {
         </div>
         
         {/* Right: Community Poll */}
-        <PollWidget pollId="a0000000-0000-0000-0000-000000000002" />
+        <PollWidget pollId="a0000000-0000-0000-0000-000000000003" />
       </div>
       
       {/* Latest Updates + Suggestion Box - Side by Side */}
