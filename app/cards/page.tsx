@@ -30,7 +30,7 @@ export default function CardsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedSets, setSelectedSets] = useState<Set<string>>(new Set(['OGN'])); // Default: only OGN
+  const [selectedSets, setSelectedSets] = useState<Set<string>>(new Set(['OGN', 'UNL'])); // Default: OGN and UNL
   const [selectedFactions, setSelectedFactions] = useState<Set<string>>(new Set()); // Empty = all
   const [selectedRarities, setSelectedRarities] = useState<Set<string>>(new Set()); // Empty = all
   const [showOwned, setShowOwned] = useState(true);
@@ -55,26 +55,45 @@ export default function CardsPage() {
       setError(null);
       console.log('[CardsPage] Starting to load cards...');
       const supabase = createSupabaseClient();
-      const { data, error } = await supabase
-        .from('cards')
-        .select('*')
-        .order('set_code', { ascending: true })
-        .order('sort_key', { ascending: true, nullsFirst: false })
-        .order('collector_number');
+      
+      // Fetch all cards in batches (Supabase has 1000 row limit per request)
+      const batchSize = 1000;
+      let allCards: Card[] = [];
+      let offset = 0;
+      let hasMore = true;
+      
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from('cards')
+          .select('*')
+          .order('set_code', { ascending: true })
+          .order('sort_key', { ascending: true, nullsFirst: false })
+          .order('collector_number')
+          .range(offset, offset + batchSize - 1);
 
-      if (error) {
-        // Don't show AbortError to users - it's a development-only issue
-        if (error.message?.includes('AbortError') || error.name === 'AbortError') {
-          console.log('[CardsPage] Request aborted (normal in development)');
-          setLoading(false);
-          return;
+        if (error) {
+          // Don't show AbortError to users - it's a development-only issue
+          if (error.message?.includes('AbortError') || error.name === 'AbortError') {
+            console.log('[CardsPage] Request aborted (normal in development)');
+            setLoading(false);
+            return;
+          }
+          console.error('[CardsPage] Supabase error:', error);
+          throw error;
         }
-        console.error('[CardsPage] Supabase error:', error);
-        throw error;
+        
+        if (data && data.length > 0) {
+          allCards = [...allCards, ...data];
+          offset += batchSize;
+          hasMore = data.length === batchSize;
+          console.log(`[CardsPage] Loaded batch: ${data.length} cards (total: ${allCards.length})`);
+        } else {
+          hasMore = false;
+        }
       }
       
-      console.log('[CardsPage] Loaded cards:', data?.length || 0);
-      setCards(data || []);
+      console.log('[CardsPage] Loaded all cards:', allCards.length);
+      setCards(allCards);
       setLoading(false);
     } catch (err: any) {
       // Don't show AbortError to users

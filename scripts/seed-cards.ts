@@ -43,6 +43,11 @@ async function seedCards() {
       const collectorNumber = (card as any).collector_number || card.number || '';
       const setCode = (card as any).set?.set_id || card.set_code || card.set || '';
       
+      // Skip promotional/preview sets (OPP, PR, JDG)
+      if (['OPP', 'PR', 'JDG'].includes(setCode)) {
+        return; // Skip promotional sets
+      }
+      
       // Only skip overnumbered * variants (299*-310* for OGN set)
       // Don't skip other cards that might have * in their data
       if (setCode === 'OGN' && publicCode) {

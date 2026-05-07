@@ -8,8 +8,8 @@ import { RIFTLE_CONFIG } from '@/lib/riftle/config';
 import { getCountryFlag } from '@/lib/geo-utils';
 import RiftleTutorial from '@/components/RiftleTutorial';
 import RiftleDailyPlaysChart from '@/components/RiftleDailyPlaysChart';
-import PollWidget from '@/components/PollWidget';
 import SuggestionBox from '@/components/SuggestionBox';
+import PollWidget from '@/components/PollWidget';
 
 interface Card {
   id: string;
@@ -797,12 +797,6 @@ export default function RiftlePage() {
             Puzzle for {new Date(puzzleDate).toLocaleDateString()}
           </p>
         )}
-        {/* New Poll Notification */}
-        <div className="mt-3 inline-block">
-          <p className="text-red-500 font-bold text-lg animate-pulse drop-shadow-[0_0_10px_rgba(239,68,68,0.8)]">
-            🗳️ NEW POLL, PLEASE VOTE!
-          </p>
-        </div>
         {!gameOver && (
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
             Time: {Math.floor(elapsedTime / 60)}:{(elapsedTime % 60).toString().padStart(2, '0')}
@@ -1446,7 +1440,19 @@ export default function RiftlePage() {
         </div>
         
         {/* Right: Community Poll */}
-        <PollWidget pollId="a0000000-0000-0000-0000-000000000003" />
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+          <h2 className="text-2xl font-bold mb-4">📊 Community Poll</h2>
+          <div className="text-center py-8">
+            <p className="text-gray-600 dark:text-gray-400 mb-4">No current poll.</p>
+            <div className="text-4xl mb-2">🎉</div>
+            <p className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+              UNL is Live!
+            </p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              UNL cards will start appearing in daily puzzles. Good luck! 🍀
+            </p>
+          </div>
+        </div>
       </div>
       
       {/* Latest Updates + Suggestion Box - Side by Side */}

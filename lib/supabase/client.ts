@@ -24,6 +24,14 @@ export function createSupabaseClient() {
       autoRefreshToken: true,
       detectSessionInUrl: true,
     },
+    global: {
+      headers: {
+        'Range-Unit': 'items',
+      },
+    },
+    db: {
+      schema: 'public',
+    },
   });
   return supabaseClient;
 }
